@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hidrosfera — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Public+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deep:#0B3D4C; --deep-2:#082B36; --teal:#1C7C82; --teal-lt:#2E9AA0;
+  --sand:#EDE4D3; --sand-2:#E3D7C0; --foam:#FBFAF7; --coral:#E8734A; --coral-dk:#C85A34;
+  --ink:#10262B; --ink-soft:#4A5D61; --line:#D9CEB8;
+  --ok:#2E7D4F; --ok-bg:#E6F2EA; --warn:#B8860B; --warn-bg:#FBF3DD; --err:#C0392B; --err-bg:#FBEAE7;
+  --gray:#6B7280; --gray-bg:#EEF0F2;
+  --font-display:'Fraunces', serif; --font-body:'Public Sans', sans-serif; --font-mono:'IBM Plex Mono', monospace;
+  --radius-s:8px; --radius-m:14px; --radius-l:22px;
+  --shadow-card:0 1px 2px rgba(11,61,76,.06), 0 8px 24px rgba(11,61,76,.08);
+  --shadow-pop:0 12px 40px rgba(11,61,76,.22);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{ font-family:var(--font-body); background:var(--sand); color:var(--ink); -webkit-font-smoothing:antialiased; min-height:100vh; }
+h1,h2,h3,h4{ font-family:var(--font-display); font-weight:600; margin:0; color:var(--deep); }
+p{margin:0;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+.hidden{display:none !important;}
+.container{ max-width:1280px; margin:0 auto; padding:0 28px; }
+
+/* ---- Login gate ---- */
+.login-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg, var(--deep), var(--deep-2)); }
+.login-card{ background:var(--foam); border-radius:var(--radius-l); padding:40px; width:100%; max-width:380px; box-shadow:var(--shadow-pop); text-align:center; }
+.login-card .brand-mark{ width:44px; height:44px; margin-bottom:10px; }
+.login-card h1{ font-size:22px; margin-bottom:6px; }
+.login-card p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:22px; }
+.login-card input{ width:100%; border:1.5px solid var(--line); border-radius:var(--radius-s); padding:12px 14px; font-size:15px; margin-bottom:14px; }
+.login-card input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(28,124,130,.15); }
+.login-error{ color:var(--err); font-size:13px; margin-bottom:12px; min-height:16px; }
+.login-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:18px; line-height:1.6; }
+
+/* ---- Shell ---- */
+.masthead{ background:linear-gradient(180deg, var(--deep), var(--deep-2)); color:var(--foam); padding:18px 0; }
+.masthead .container{ display:flex; align-items:center; justify-content:space-between; }
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{ width:32px; height:32px; }
+.brand-name{ font-family:var(--font-display); font-size:19px; }
+.brand-tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--teal-lt); }
+.masthead-right{ display:flex; align-items:center; gap:16px; font-size:13px; }
+.masthead-right a, .masthead-right button{ color:var(--foam); background:none; border:1.5px solid rgba(255,255,255,.3); border-radius:999px; padding:7px 14px; font-size:12.5px; text-decoration:none; }
+.masthead-right a:hover, .masthead-right button:hover{ border-color:#fff; }
+
+.tabbar{ background:var(--foam); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:30; }
+.tabbar .container{ display:flex; gap:4px; overflow-x:auto; }
+.tab-btn{ background:none; border:none; padding:16px 18px; font-size:13.5px; font-weight:600; color:var(--ink-soft); border-bottom:3px solid transparent; white-space:nowrap; }
+.tab-btn.active{ color:var(--deep); border-bottom-color:var(--coral); }
+.tab-btn:hover{ color:var(--deep); }
+
+main{ padding:32px 0 80px; }
+.page-head{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; flex-wrap:wrap; gap:14px; }
+.page-title{ font-size:26px; }
+.page-sub{ color:var(--ink-soft); font-size:13.5px; margin-top:4px; }
+
+.card{ background:var(--foam); border-radius:var(--radius-l); box-shadow:var(--shadow-card); padding:22px; margin-bottom:20px; }
+.stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
+.stat-card{ background:var(--foam); border-radius:var(--radius-m); box-shadow:var(--shadow-card); padding:18px 20px; }
+.stat-label{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--teal); margin-bottom:6px; }
+.stat-value{ font-family:var(--font-display); font-size:26px; color:var(--deep); }
+.stat-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
+
+.btn{ border:none; border-radius:999px; padding:11px 20px; font-weight:700; font-size:13.5px; transition:transform .15s, background .2s, opacity .2s; }
+.btn:active{ transform:scale(.97); }
+.btn-primary{ background:var(--coral); color:#fff; }
+.btn-primary:hover{ background:var(--coral-dk); }
+.btn-outline{ background:transparent; color:var(--deep); border:1.5px solid var(--deep); }
+.btn-outline:hover{ background:var(--deep); color:#fff; }
+.btn-ghost{ background:none; color:var(--teal); }
+.btn-ghost:hover{ text-decoration:underline; }
+.btn-danger{ background:var(--err-bg); color:var(--err); border:1.5px solid transparent; }
+.btn-danger:hover{ background:var(--err); color:#fff; }
+.btn-sm{ padding:7px 14px; font-size:12.5px; }
+.btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+.field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.field label{ font-size:12px; font-weight:600; color:var(--ink-soft); }
+.field input, .field select, .field textarea{
+  border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-s); padding:10px 12px; font-size:14px; color:var(--ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(28,124,130,.15); }
+.field-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+.field textarea{ min-height:70px; resize:vertical; }
+
+.badge{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; padding:4px 10px; border-radius:999px; font-weight:700; display:inline-block; }
+.badge-pending{ background:var(--warn-bg); color:var(--warn); }
+.badge-confirmed{ background:var(--ok-bg); color:var(--ok); }
+.badge-cancelled{ background:var(--err-bg); color:var(--err); }
+.badge-done{ background:var(--gray-bg); color:var(--gray); }
+
+table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+th{ text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); padding:10px 12px; border-bottom:2px solid var(--line); white-space:nowrap; }
+td{ padding:12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+tr.table-row:hover{ background:rgba(28,124,130,.05); cursor:pointer; }
+
+.toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+.toolbar input, .toolbar select{ border:1.5px solid var(--line); border-radius:999px; padding:9px 16px; font-size:13px; background:#fff; }
+.toolbar input:focus, .toolbar select:focus{ outline:none; border-color:var(--teal); }
+
+.modal-backdrop{ position:fixed; inset:0; background:rgba(8,32,40,.55); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
+.modal-box{ background:#fff; border-radius:var(--radius-l); max-width:760px; width:100%; max-height:90vh; overflow-y:auto; padding:30px; box-shadow:var(--shadow-pop); position:relative; margin:auto; }
+.modal-close{ position:absolute; top:16px; right:16px; background:var(--sand); border:none; width:32px; height:32px; border-radius:50%; font-size:15px; color:var(--deep); }
+
+.toast{ position:fixed; top:20px; right:24px; background:var(--deep); color:#fff; padding:14px 20px; border-radius:var(--radius-s); box-shadow:var(--shadow-pop); z-index:300; font-size:14px; max-width:320px; animation:toastIn .3s ease; }
+@keyframes toastIn{ from{opacity:0; transform:translateX(20px);} to{opacity:1; transform:translateX(0);} }
+
+.checkbox-row{ display:flex; align-items:center; gap:8px; font-size:13.5px; }
+.checkbox-row input{ width:16px; height:16px; accent-color:var(--teal); }
+
+/* Calendar (bookings + availability) */
+.admin-cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.admin-cal-head button{ background:var(--sand); border:none; width:34px; height:34px; border-radius:50%; font-size:16px; color:var(--deep); }
+.admin-cal-title{ font-family:var(--font-display); font-size:20px; color:var(--deep); }
+.admin-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.admin-cal-dow{ text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; padding-bottom:6px; }
+.admin-cal-day{ background:var(--foam); border-radius:10px; min-height:96px; padding:6px; border:1px solid var(--line); display:flex; flex-direction:column; gap:3px; }
+.admin-cal-day.out-range{ background:transparent; border:none; }
+.admin-cal-day.today{ border-color:var(--teal); box-shadow:0 0 0 2px rgba(28,124,130,.15) inset; }
+.admin-cal-daynum{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); }
+.admin-cal-event{ font-size:10.5px; padding:3px 6px; border-radius:5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.event-pending{ background:var(--warn-bg); color:#7a5c00; }
+.event-confirmed{ background:var(--ok-bg); color:var(--ok); }
+.event-cancelled{ background:var(--err-bg); color:var(--err); text-decoration:line-through; }
+.event-done{ background:var(--gray-bg); color:var(--gray); }
+
+.avail-day{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:13px; background:var(--sand); border:none; color:var(--ink); }
+.avail-day.blocked{ background:var(--err-bg); color:var(--err); text-decoration:line-through; }
+.avail-day.past{ opacity:.3; cursor:not-allowed; }
+.avail-day.out-range{ visibility:hidden; }
+
+.activity-row{ display:flex; gap:16px; align-items:center; padding:14px; border-radius:var(--radius-m); border:1px solid var(--line); margin-bottom:10px; background:#fff; }
+.activity-row .thumb{ width:56px; height:56px; border-radius:10px; background:linear-gradient(135deg,var(--deep),var(--teal)); display:flex; align-items:center; justify-content:center; font-size:24px; color:#fff; flex-shrink:0; background-size:cover; background-position:center; }
+.activity-row .info{ flex:1; min-width:0; }
+.activity-row .info h4{ font-size:15px; }
+.activity-row .info .meta{ font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin-top:2px; }
+.activity-row .actions{ display:flex; gap:8px; flex-shrink:0; }
+.pill-inactive{ background:var(--gray-bg); color:var(--gray); font-family:var(--font-mono); font-size:10px; padding:3px 9px; border-radius:999px; margin-left:8px; }
+
+.client-card{ padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius-m); background:#fff; margin-bottom:10px; }
+.client-card h4{ font-size:14.5px; }
+.client-card .meta{ font-size:12px; color:var(--ink-soft); margin-top:4px; }
+.birthday-chip{ display:inline-flex; align-items:center; gap:8px; background:var(--warn-bg); color:#7a5c00; padding:8px 14px; border-radius:999px; font-size:13px; margin:4px 6px 4px 0; }
+
+.bar-chart{ display:flex; align-items:flex-end; gap:10px; height:180px; padding-top:10px; }
+.bar-chart-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; justify-content:flex-end; height:100%; }
+.bar-chart-bar{ width:100%; background:linear-gradient(180deg,var(--teal-lt),var(--deep)); border-radius:6px 6px 0 0; min-height:2px; }
+.bar-chart-label{ font-size:10.5px; color:var(--ink-soft); font-family:var(--font-mono); text-align:center; }
+
+/* Year-at-a-glance mini calendars */
+.year-overview{ margin-top:26px; }
+.year-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; }
+.mini-month{ background:var(--foam); border-radius:var(--radius-m); box-shadow:var(--shadow-card); padding:14px; cursor:pointer; border:2px solid transparent; transition:box-shadow .2s ease, transform .15s ease; }
+.mini-month:hover{ box-shadow:0 10px 26px rgba(11,61,76,.18); transform:translateY(-2px); }
+.mini-month.is-active-month{ border-color:var(--coral); }
+.mini-month-title{ font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--deep); font-weight:700; margin-bottom:8px; text-align:center; }
+.mini-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.mini-dow{ font-size:8px; text-align:center; color:var(--ink-soft); }
+.mini-day{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:9.5px; color:var(--ink-soft); border-radius:50%; }
+.mini-day.out-range{ visibility:hidden; }
+.mini-day.has-event{ font-weight:700; }
+.mini-day.status-pending{ background:var(--warn-bg); color:#7a5c00; }
+.mini-day.status-confirmed{ background:var(--ok-bg); color:var(--ok); }
+.mini-day.status-cancelled{ background:var(--err-bg); color:var(--err); }
+.mini-day.status-done{ background:var(--gray-bg); color:var(--gray); }
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <svg class="brand-mark" viewBox="0 0 40 40" fill="none" style="margin:0 auto 12px; display:block;">
+      <circle cx="20" cy="20" r="19" stroke="#1C7C82" stroke-width="1.5"/>
+      <path d="M4 22c4-4 8 4 12 0s8-4 12 0 8 4 8 4" stroke="#E8734A" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <h1 tr="Hidrosfera Admin">Hidrosfera Admin</h1>
+    <p tr="Staff access only.">Staff access only.</p>
+    <input type="password" id="adminPasswordInput" placeholder="Password" autocomplete="current-password">
+    <div class="login-error" id="loginError"></div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%;" tr="Sign in">Sign in</button>
+    <div class="login-hint" tr="Default password: hidrosfera2026 — change it under Settings once you're in. This is a client-side gate for prototyping only; see chat for how to secure this properly with a real backend.">
+      Default password: <b>hidrosfera2026</b> — change it under Settings once you're in.<br>
+      This is a client-side gate for prototyping only; see chat for how to secure this properly with a real backend.
+    </div>
+  </div>
+</div>
+
+<div id="adminApp" class="hidden">
+  <div class="masthead">
+    <div class="container">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="19" stroke="#2E9AA0" stroke-width="1.5"/>
+          <path d="M4 22c4-4 8 4 12 0s8-4 12 0 8 4 8 4" stroke="#E8734A" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="brand-name" tr="Hidrosfera">Hidrosfera</div>
+          <div class="brand-tag" tr="Admin panel">Admin panel</div>
+        </div>
+      </div>
+      <div class="masthead-right">
+        <a href="./hidrosfera-booking.html" target="_blank" rel="noopener" tr="View booking site ↗">View booking site ↗</a>
+        <button id="logoutBtn" tr="Log out">Log out</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="container" id="tabBar"></div>
+  </div>
+
+  <main class="container" id="adminMain"></main>
+</div>
+
+<div id="toastHost"></div>
+<div id="modalHost"></div>
+
+<script>
+/* ---------------------------------------------------------------------
+   HOST COMPATIBILITY SHIM — see hidrosfera-booking.html for full notes.
+   Recreates window.storage using localStorage when not already present
+   (i.e. once hosted outside Claude.ai's sandbox), so the same code runs
+   in both places. NOTE: localStorage is per-browser, not a shared
+   database — the admin panel will only see bookings made in the same
+   browser. A real launch needs a real backend (see Settings tab notes).
+   --------------------------------------------------------------------- */
+if(!window.storage){
+  window.storage = (function(){
+    const PREFIX = 'hidrosfera_store::';
+    const keyFor = (key, shared) => PREFIX + (shared ? 'shared::' : 'private::') + key;
+    return {
+      async get(key, shared){
+        const raw = localStorage.getItem(keyFor(key, shared));
+        if(raw === null) throw new Error('Key not found: ' + key);
+        return { key, value: raw, shared: !!shared };
+      },
+      async set(key, value, shared){
+        localStorage.setItem(keyFor(key, shared), value);
+        return { key, value, shared: !!shared };
+      },
+      async delete(key, shared){
+        localStorage.removeItem(keyFor(key, shared));
+        return { key, deleted: true, shared: !!shared };
+      },
+      async list(prefix, shared){
+        const full = keyFor(prefix || '', shared);
+        const base = keyFor('', shared);
+        const keys = [];
+        for(let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          if(k && k.startsWith(full)) keys.push(k.slice(base.length));
+        }
+        return { keys, prefix, shared: !!shared };
+      }
+    };
+  })();
+}
+</script>
+<script>
+/* =====================================================================
+   HIDROSFERA — ADMIN PANEL
+   Reads/writes the SAME shared storage keys as the customer booking
+   app (hidrosfera-booking.html), so anything changed here — activities,
+   availability, booking status, discounts — is reflected there too.
+   ===================================================================== */
+const SK = {
+  activities:   'hidrosfera:activities',
+  availability: 'hidrosfera:availability',
+  clients:      'hidrosfera:clients',
+  bookings:     'hidrosfera:bookings',
+  settings:     'hidrosfera:settings'
+};
+const SESSION_KEY = 'hidrosfera:adminSession';
+
+async function storeGet(key, shared){
+  try{ const r = await window.storage.get(key, !!shared); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function storeSet(key, value, shared){
+  try{ await window.storage.set(key, JSON.stringify(value), !!shared); return true; }
+  catch(e){ console.error('storage set failed', key, e); return false; }
+}
+
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const MAX_DATE = new Date(TODAY); MAX_DATE.setMonth(MAX_DATE.getMonth() + 30);
+function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function parseDate(s){ const [y,m,day] = s.split('-').map(Number); return new Date(y, m-1, day); }
+function fmtDateHuman(s){ if(!s) return ''; const d=parseDate(s); return d.toLocaleDateString('en-US',{month:'short', day:'numeric', year:'numeric'}); }
+function fmtMoney(n){ return 'MX$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function escapeAttr(s){ return String(s==null?'':s).replace(/"/g,'&quot;'); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function daysBetweenInclusive(a,b){ return Math.round((parseDate(b)-parseDate(a))/86400000)+1; }
+function fmtBaRange(act){
+  if(!act.date) return '—';
+  if(act.endDate) return `${fmtDateHuman(act.date)} → ${fmtDateHuman(act.endDate)} (${daysBetweenInclusive(act.date, act.endDate)}d)`;
+  return fmtDateHuman(act.date);
+}
+function ageFromDob(dob){
+  if(!dob) return null;
+  const d = parseDate(dob);
+  let age = TODAY.getFullYear() - d.getFullYear();
+  const m = TODAY.getMonth() - d.getMonth();
+  if(m<0 || (m===0 && TODAY.getDate()<d.getDate())) age--;
+  return age;
+}
+
+const DEFAULT_PASSWORD = 'hidrosfera2026';
+
+const TABS = [
+  { key:'calendar',   label:'Bookings Calendar' },
+  { key:'bookings',   label:'All Bookings' },
+  { key:'activities', label:'Activities &amp; Availability' },
+  { key:'clients',    label:'Clients' },
+  { key:'payments',   label:'Payments' },
+  { key:'settings',   label:'Settings' },
+];
+
+const state = {
+  tab: 'calendar',
+  activities: [],
+  availability: {},
+  bookings: [],
+  clients: {},
+  settings: {},
+  calMonth: { y: TODAY.getFullYear(), m: TODAY.getMonth() },     // bookings calendar cursor
+  availMonth: { y: TODAY.getFullYear(), m: TODAY.getMonth() },   // per-activity availability editor cursor
+  availEditingId: null,
+  bookingsFilter: { status:'all', q:'' },
+  paymentsFilter: { activityId:'all', from:'', to:'' },
+  clientsSearch: '',
+};
+
+function showToast(msg){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); }, 3200);
+}
+function showModal(html){
+  const host = document.getElementById('modalHost');
+  host.innerHTML = `<div class="modal-backdrop" id="modalBackdrop"><div class="modal-box">
+    <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+    ${html}
+  </div></div>`;
+  document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target.id==='modalBackdrop') closeModal(); });
+}
+function closeModal(){ document.getElementById('modalHost').innerHTML = ''; }
+
+/* ---------------------------------------------------------------------
+   AUTH
+   --------------------------------------------------------------------- */
+async function attemptLogin(){
+  const input = document.getElementById('adminPasswordInput');
+  const err = document.getElementById('loginError');
+  const settings = await storeGet(SK.settings, true) || {};
+  const pw = settings.adminPassword || DEFAULT_PASSWORD;
+  if(input.value === pw){
+    await storeSet(SESSION_KEY, { loggedIn:true }, false);
+    err.textContent = '';
+    enterApp();
+  } else {
+    err.textContent = 'Incorrect password.';
+  }
+}
+async function logout(){
+  await storeSet(SESSION_KEY, { loggedIn:false }, false);
+  document.getElementById('adminApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('adminPasswordInput').value = '';
+}
+function enterApp(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('adminApp').classList.remove('hidden');
+  renderTabs();
+  renderTab();
+}
+
+/* ---------------------------------------------------------------------
+   DATA LOADING
+   --------------------------------------------------------------------- */
+const DEFAULT_ACTIVITIES = [
+  { id:'act_whaleshark', name:'Whale Shark Snorkel', category:'Snorkeling', icon:'🐋', image:null,
+    shortDesc:'Swim alongside gentle whale sharks in the plankton-rich waters off La Paz Bay.',
+    longDesc:'Whale sharks gather in La Paz Bay to feed on plankton blooms, and this trip puts you in the water alongside them with a certified guide.',
+    durationLabel:'4 hrs · morning', hours:'Departs 8:00 AM · Returns 12:00 PM', price:2450, active:true, discount:null,
+    highlights:['Small groups, one guide per boat','Snorkel gear included'], included:['Round-trip boat transfer','Snorkel gear','Water & snack'], bring:['Reef-safe sunscreen'], meetingPoint:'Malecón de La Paz, dock 2.' },
+  { id:'act_sealions', name:'Sea Lion Colony Snorkel', category:'Snorkeling', icon:'🦭', image:null,
+    shortDesc:'Snorkel with a playful sea lion colony at Los Islotes, part of a protected marine park.',
+    longDesc:'Los Islotes is home to one of the most accessible sea lion colonies in the world.',
+    durationLabel:'5 hrs · full morning', hours:'Departs 7:30 AM · Returns 12:30 PM', price:2100, active:true, discount:{type:'percent', value:10},
+    highlights:['Two snorkel stops'], included:['Boat transfer','Snorkel gear'], bring:['Rash guard recommended'], meetingPoint:'Marina Cortez, La Paz.' },
+  { id:'act_pulmodive', name:'Two-Tank Reef Dive — Cabo Pulmo', category:'Diving', icon:'🤿', image:null,
+    shortDesc:'Two-tank certified dive on the living coral reef of Cabo Pulmo National Park.',
+    longDesc:'Cabo Pulmo protects one of the oldest living reefs in the Gulf of California.',
+    durationLabel:'6 hrs · full day', hours:'Departs 7:00 AM · Returns 2:00 PM', price:3600, active:true, discount:null,
+    highlights:['Two guided tank dives'], included:['Tanks & weights','Dive guide'], bring:['Certification card'], meetingPoint:'Cabo Pulmo dive shop.' },
+  { id:'act_kayaksunset', name:'Sunset Kayak & Bioluminescence', category:'Kayaking', icon:'🛶', image:null,
+    shortDesc:'Paddle a calm bay at sunset, then watch the water glow with bioluminescent plankton.',
+    longDesc:'A gentle paddle through a sheltered bay timed to catch the sunset, followed by bioluminescence once it is fully dark.',
+    durationLabel:'3 hrs · evening', hours:'Departs 6:00 PM · Returns 9:00 PM', price:1350, active:true, discount:null,
+    highlights:['Beginner-friendly'], included:['Kayak & paddle','Guide'], bring:['Light jacket'], meetingPoint:'Playa El Tecolote.' },
+  { id:'act_fishing', name:'Sport Fishing — Dorado & Marlin', category:'Fishing', icon:'🎣', image:null,
+    shortDesc:'Half-day offshore sport fishing charter chasing dorado, marlin and yellowfin tuna.',
+    longDesc:'A half-day offshore charter targeting whatever is running that season.',
+    durationLabel:'6 hrs · half day', hours:'Departs 6:30 AM · Returns 12:30 PM', price:5200, active:true, discount:null,
+    highlights:['Licensed captain & mate'], included:['Rods, reels & bait','Fishing license'], bring:['Sunscreen & hat'], meetingPoint:'Marina Cabo San Lucas.' },
+  { id:'act_bluewhale', name:'Blue Whale Watching — Loreto', category:'Whale Watching', icon:'🐳', image:null,
+    shortDesc:'Seasonal encounters with the largest animal on Earth in the calm waters of Loreto Bay.',
+    longDesc:'Loreto Bay is a seasonal feeding ground for blue whales.',
+    durationLabel:'4 hrs · morning', hours:'Departs 8:30 AM · Returns 12:30 PM', price:2800, active:true, discount:null,
+    highlights:['Seasonal (Jan–Apr)'], included:['Boat transfer','Naturalist guide'], bring:['Warm layer'], meetingPoint:'Loreto public pier.' },
+  { id:'act_discoverscuba', name:'Discover Scuba Diving (Beginner)', category:'Diving', icon:'🫧', image:null,
+    shortDesc:'No certification needed — a guided introductory dive for first-timers, pool + ocean.',
+    longDesc:'A confined-water briefing followed by a shallow, guided ocean dive.',
+    durationLabel:'4 hrs · morning', hours:'Departs 9:00 AM · Returns 1:00 PM', price:2200, active:true, discount:null,
+    highlights:['No certification required'], included:['All gear','Instructor'], bring:['Swimsuit & towel'], meetingPoint:'Hidrosfera dive center.' },
+  { id:'act_mobula', name:'Snorkel with Mobula Rays', category:'Snorkeling', icon:'🐟', image:null,
+    shortDesc:'Snorkel among migrating schools of mobula rays as they leap and glide near the surface.',
+    longDesc:'During migration season, mobula rays gather in huge schools near the surface.',
+    durationLabel:'3.5 hrs · morning', hours:'Departs 8:00 AM · Returns 11:30 AM', price:1950, active:true, discount:{type:'amount', value:200},
+    highlights:['Seasonal migration event'], included:['Boat transfer','Snorkel gear'], bring:['Reef-safe sunscreen'], meetingPoint:'Marina Cortez, La Paz.' },
+];
+
+async function loadAll(){
+  state.activities = await storeGet(SK.activities, true) || [];
+  if(state.activities.length === 0){
+    // First time anything has touched shared storage — seed the same
+    // default catalog the booking site uses, so this panel works even
+    // if opened before the booking site has ever loaded.
+    state.activities = DEFAULT_ACTIVITIES;
+    await storeSet(SK.activities, state.activities, true);
+  }
+  state.availability = await storeGet(SK.availability, true) || {};
+  state.bookings = await storeGet(SK.bookings, true) || [];
+  state.clients = await storeGet(SK.clients, true) || {};
+  state.settings = await storeGet(SK.settings, true) || { notifyEmail:'reservations@hidrosfera.mx' };
+}
+function activityById(id){ return state.activities.find(a=>a.id===id); }
+
+/* ---------------------------------------------------------------------
+   TAB SHELL
+   --------------------------------------------------------------------- */
+function renderTabs(){
+  const bar = document.getElementById('tabBar');
+  bar.innerHTML = TABS.map(t=>`<button class="tab-btn ${state.tab===t.key?'active':''}" data-tab="${t.key}" tr="${t.label.replace(/&amp;/,'&')}">${t.label}</button>`).join('');
+}
+function switchTab(key){ state.tab = key; renderTabs(); renderTab(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function renderTab(){
+  const main = document.getElementById('adminMain');
+  const renderers = {
+    calendar: renderCalendarTab,
+    bookings: renderBookingsTab,
+    activities: renderActivitiesTab,
+    clients: renderClientsTab,
+    payments: renderPaymentsTab,
+    settings: renderSettingsTab,
+  };
+  main.innerHTML = renderers[state.tab] ? renderers[state.tab]() : '';
+}
+
+/* =======================================================================
+   BOOKINGS CALENDAR TAB
+   ======================================================================= */
+function shortContactName(fullName){
+  if(!fullName || !fullName.trim()) return 'Guest';
+  const parts = fullName.trim().split(/\s+/);
+  if(parts.length === 1) return parts[0];
+  const initials = parts.slice(1).map(p=>p[0].toUpperCase()+'.').join('');
+  return `${parts[0]} ${initials}`;
+}
+function bookingContactName(b){
+  return (b.mainContact && b.mainContact.fullName) || (b.people[0] && b.people[0].fullName) || 'Guest';
+}
+function getBookingEvents(){
+  const events = [];
+  state.bookings.forEach(b=>{
+    const contact = bookingContactName(b);
+    (b.activities||[]).forEach(act=>{
+      const a = activityById(act.activityId);
+      events.push({
+        bookingId: b.id, bookingCode: b.bookingCode, status: b.status,
+        date: act.date, endDate: act.endDate,
+        activityName: a ? a.name : 'Unknown experience', activityIcon: a ? a.icon : '❓',
+        contact, peopleCount: (act.assignedPersonIds||b.people.map(p=>p.id)).length
+      });
+    });
+  });
+  return events;
+}
+
+function renderCalendarTab(){
+  const { y, m } = state.calMonth;
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const monthLabel = first.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  const events = getBookingEvents();
+
+  let cells = '';
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  cells += dows.map(d=>`<div class="admin-cal-dow" tr="${d}">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) cells += `<div class="admin-cal-day out-range"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(y,m,d);
+    const iso = fmtDate(dateObj);
+    const isToday = iso === fmtDate(TODAY);
+    const dayEvents = events.filter(e=>e.date===iso);
+    cells += `<div class="admin-cal-day ${isToday?'today':''}">
+      <div class="admin-cal-daynum">${d}</div>
+      ${dayEvents.map(e=>`<div class="admin-cal-event event-${e.status}" data-open-booking="${e.bookingId}" title="${escapeAttr(e.activityName)} — ${escapeAttr(e.contact)}">
+        ${e.activityIcon} ${escapeHtml(shortContactName(e.contact))} · ${e.peopleCount}p${e.endDate?' →':''}
+      </div>`).join('')}
+    </div>`;
+  }
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="Bookings calendar">Bookings calendar</div>
+      <div class="page-sub" tr="Yellow = pending · Green = confirmed · Red = cancelled · Gray = done. Click any booking to open it.">Yellow = pending · Green = confirmed · Red = cancelled · Gray = done. Click any booking to open it.</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="admin-cal-head">
+      <button data-admin-cal-nav="prev" aria-label="Previous month">‹</button>
+      <div class="admin-cal-title">${monthLabel}</div>
+      <button data-admin-cal-nav="next" aria-label="Next month">›</button>
+    </div>
+    <div class="admin-cal-grid">${cells}</div>
+  </div>
+  ${renderYearOverview(y)}`;
+}
+
+/* ---- Year-at-a-glance strip: every day gets a filled circle in the
+   same status colors as the big calendar; clicking a month jumps the
+   big calendar above to that month. ---------------------------------- */
+function buildDayStatusMap(year){
+  const priority = { pending:4, confirmed:3, cancelled:2, done:1 };
+  const map = {};
+  getBookingEvents().forEach(e=>{
+    const start = parseDate(e.date);
+    const end = e.endDate ? parseDate(e.endDate) : start;
+    let cur = new Date(start);
+    while(cur <= end){
+      if(cur.getFullYear() === year){
+        const iso = fmtDate(cur);
+        if(!map[iso] || priority[e.status] > priority[map[iso]]) map[iso] = e.status;
+      }
+      cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate()+1);
+    }
+  });
+  return map;
+}
+function renderYearOverview(year){
+  const dayStatusMap = buildDayStatusMap(year);
+  const months = Array.from({length:12}, (_,m)=>{
+    const first = new Date(year, m, 1);
+    const startDow = first.getDay();
+    const daysInMonth = new Date(year, m+1, 0).getDate();
+    const monthName = first.toLocaleDateString('en-US', {month:'short'});
+    let cells = '';
+    const dows = ['S','M','T','W','T','F','S'];
+    cells += dows.map(d=>`<div class="mini-dow">${d}</div>`).join('');
+    for(let i=0;i<startDow;i++) cells += `<div class="mini-day out-range"></div>`;
+    for(let d=1; d<=daysInMonth; d++){
+      const iso = fmtDate(new Date(year,m,d));
+      const status = dayStatusMap[iso];
+      cells += `<div class="mini-day ${status?'has-event status-'+status:''}">${d}</div>`;
+    }
+    const isActive = year === state.calMonth.y && m === state.calMonth.m;
+    return `<div class="mini-month ${isActive?'is-active-month':''}" data-year-nav-month="${m}" data-year-nav-year="${year}" title="Jump to ${monthName} ${year}">
+      <div class="mini-month-title">${monthName}</div>
+      <div class="mini-grid">${cells}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="year-overview">
+    <div class="page-head" style="margin-bottom:14px;">
+      <div>
+        <h3 tr="${year} at a glance">${year} at a glance</h3>
+        <div class="stat-sub" tr="Click a month to jump the calendar above.">Click a month to jump the calendar above.</div>
+      </div>
+      <div class="admin-cal-head" style="gap:4px;">
+        <button data-year-overview-nav="prev" aria-label="Previous year">‹</button>
+        <div class="admin-cal-title" style="font-size:16px;">${year}</div>
+        <button data-year-overview-nav="next" aria-label="Next year">›</button>
+      </div>
+    </div>
+    <div class="year-grid">${months}</div>
+  </div>`;
+}
+
+function openBookingDetail(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  showModal(buildBookingDetailHtml(b));
+}
+
+function equipmentSummaryLineAdmin(p){
+  if(p.needsRental !== true) return p.needsRental===false ? 'Bringing own gear' : '—';
+  const parts = [];
+  if(p.ownRegulatorBrought) parts.push('Own regulator' + (p.ownRegulatorIsDIN?' (DIN)':' (yoke)'));
+  ['bcd','wetsuit','fins'].forEach(k=>{
+    if(p.items && p.items[k] && p.items[k].checked){
+      const label = k==='bcd'?'BCD':k==='wetsuit'?'Wetsuit':'Fins';
+      parts.push(label + (p.items[k].size ? ' · ' + p.items[k].size : ' · size TBD (H/W given)'));
+    }
+  });
+  ['mask','regulator','computer'].forEach(k=>{
+    if(p.items && p.items[k] && p.items[k].checked) parts.push(k==='mask'?'Mask':k==='regulator'?'Regulator (rental)':'Dive computer');
+  });
+  if(!p.knowSizes && (p.height||p.weight)) parts.push(`H/W: ${p.height}${p.heightUnit||''} / ${p.weight}${p.weightUnit||''}`);
+  return parts.length ? parts.join(', ') : 'Rental requested — details pending';
+}
+
+function buildBookingDetailHtml(b){
+  const statusOptions = ['pending','confirmed','cancelled','done'];
+  const activitiesHtml = (b.activities||[]).map(act=>{
+    const a = activityById(act.activityId);
+    const names = (act.assignedPersonIds||[]).map(id=>{ const p=b.people.find(x=>x.id===id); return p?p.fullName||'Traveler':''; }).filter(Boolean).join(', ');
+    return `<div class="card" style="padding:14px 16px; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; font-weight:600; font-size:14px;"><span>${a?a.icon:'❓'} ${escapeHtml(a?a.name:'Unknown')}</span><span style="font-family:var(--font-mono); font-size:12.5px; color:var(--ink-soft);">${fmtBaRange(act)}</span></div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">${escapeHtml(names||'—')}</div>
+    </div>`;
+  }).join('');
+
+  const peopleHtml = b.people.map((p,i)=>`
+    <div class="card" style="padding:14px 16px; margin-bottom:8px;">
+      <div style="font-weight:600; font-size:14px;">${escapeHtml(p.fullName || 'Traveler '+(i+1))} <span style="font-weight:400; font-size:12px; color:var(--ink-soft);">${p.gender||''} ${ageFromDob(p.dob)!=null ? '· '+ageFromDob(p.dob)+'y' : ''}</span></div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;" tr="Allergies/dietary">Allergies/dietary: ${escapeHtml(p.allergies||'—')}</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;" tr="Rental equipment">Rental: ${escapeHtml(equipmentSummaryLineAdmin(p))}</div>
+      ${p.notes ? `<div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">Notes: ${escapeHtml(p.notes)}</div>` : ''}
+    </div>`).join('');
+
+  const depositMax = b.total;
+
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-right:34px;">
+      <div>
+        <h3>Booking #${b.bookingCode}</h3>
+        <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">${new Date(b.createdAt).toLocaleString()}</div>
+      </div>
+      <span class="badge badge-${b.status}">${b.status}</span>
+    </div>
+
+    <div class="field-grid" style="margin-bottom:18px;">
+      <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Main contact</div><div style="font-weight:600;">${escapeHtml(bookingContactName(b))}</div></div>
+      <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Email</div><div>${escapeHtml((b.mainContact&&b.mainContact.email)||'—')}</div></div>
+      <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Language</div><div>${(b.pageLanguage||'en').toUpperCase()}</div></div>
+    </div>
+
+    <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin-bottom:8px;">Activities</div>
+    ${activitiesHtml}
+
+    <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin:16px 0 8px;">Travelers</div>
+    ${peopleHtml}
+
+    <div class="field-grid" style="margin-top:18px; align-items:end;">
+      <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Total</div><div style="font-family:var(--font-display); font-size:22px; color:var(--deep);">${fmtMoney(b.total)}</div></div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Deposit collected (MX$)</label>
+        <input type="number" min="0" max="${depositMax}" id="depositInput" value="${b.deposit||0}">
+      </div>
+      <button class="btn btn-outline btn-sm" data-save-deposit="${b.id}">Save deposit</button>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; padding-top:18px; border-top:1px solid var(--line);">
+      ${b.status==='pending' ? `<button class="btn btn-primary" data-set-status="${b.id}" data-new-status="confirmed">✓ Confirm booking</button>` : ''}
+      ${(b.status==='pending'||b.status==='confirmed') ? `<button class="btn btn-danger" data-set-status="${b.id}" data-new-status="cancelled">Cancel booking</button>` : ''}
+      ${b.status==='confirmed' ? `<button class="btn btn-outline" data-set-status="${b.id}" data-new-status="done">Mark as done</button>` : ''}
+      <button class="btn btn-ghost" data-resend-email="${b.id}">✉ Send revised version to client</button>
+    </div>
+  `;
+}
+
+async function adminSetBookingStatus(bookingId, newStatus){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  b.status = newStatus;
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast(`Booking #${b.bookingCode} marked as ${newStatus}. ${newStatus==='confirmed' ? 'A confirmation email would be sent (see chat for real email setup).' : ''}`);
+  closeModal();
+  renderTab();
+}
+async function adminSaveDeposit(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  const input = document.getElementById('depositInput');
+  if(!b || !input) return;
+  b.deposit = Number(input.value)||0;
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast(`Deposit of ${fmtMoney(b.deposit)} saved for booking #${b.bookingCode}.`);
+  renderTab();
+}
+function adminResendEmail(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  showToast(`Simulated: a ${b.status} summary email would be resent to ${(b.mainContact&&b.mainContact.email)||'the client'}.`);
+}
+
+/* =======================================================================
+   ALL BOOKINGS TAB
+   ======================================================================= */
+function bookingActivitiesSummary(b){
+  return (b.activities||[]).map(act=>{ const a=activityById(act.activityId); return a ? (a.icon+' '+a.name) : 'Unknown experience'; }).join(', ');
+}
+function renderBookingsTab(){
+  const q = (state.bookingsFilter.q||'').toLowerCase();
+  const statusF = state.bookingsFilter.status;
+  let rows = state.bookings.filter(b=>{
+    if(statusF!=='all' && b.status!==statusF) return false;
+    if(!q) return true;
+    const hay = (b.bookingCode+' '+bookingContactName(b)+' '+bookingActivitiesSummary(b)).toLowerCase();
+    return hay.includes(q);
+  }).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="All bookings">All bookings</div>
+      <div class="page-sub" tr="Search and filter every booking made through the site.">Search and filter every booking made through the site.</div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <input type="text" id="bookingsSearch" placeholder="Search by name, code, or activity…" value="${escapeAttr(state.bookingsFilter.q)}">
+    <select id="bookingsStatusFilter">
+      <option value="all" ${statusF==='all'?'selected':''}>All statuses</option>
+      <option value="pending" ${statusF==='pending'?'selected':''}>Pending</option>
+      <option value="confirmed" ${statusF==='confirmed'?'selected':''}>Confirmed</option>
+      <option value="cancelled" ${statusF==='cancelled'?'selected':''}>Cancelled</option>
+      <option value="done" ${statusF==='done'?'selected':''}>Done</option>
+    </select>
+    <span class="stat-sub" style="margin-left:auto;">${rows.length} booking${rows.length!==1?'s':''}</span>
+  </div>
+  <div class="card" style="padding:0; overflow-x:auto;">
+    <table>
+      <thead><tr><th>Booking #</th><th>Made on</th><th>Main contact</th><th>People</th><th>Activities</th><th>Status</th></tr></thead>
+      <tbody>
+        ${rows.map(b=>`
+          <tr class="table-row" data-open-booking="${b.id}">
+            <td style="font-family:var(--font-mono);">${b.bookingCode}</td>
+            <td>${new Date(b.createdAt).toLocaleDateString()}</td>
+            <td>${escapeHtml(bookingContactName(b))}</td>
+            <td>${b.people.length}</td>
+            <td style="max-width:280px; white-space:normal;">${escapeHtml(bookingActivitiesSummary(b))}</td>
+            <td><span class="badge badge-${b.status}">${b.status}</span></td>
+          </tr>`).join('') || `<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--ink-soft);">No bookings match.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* =======================================================================
+   ACTIVITIES & AVAILABILITY TAB
+   ======================================================================= */
+function renderActivitiesTab(){
+  const rows = state.activities.map(a=>{
+    const thumbStyle = a.image ? `background-image:url('${escapeAttr(a.image)}'); background-size:cover; background-position:center;` : '';
+    const discountLabel = a.discount ? (a.discount.type==='percent' ? a.discount.value+'% off' : fmtMoney(a.discount.value)+' off') : '';
+    return `
+    <div class="activity-row">
+      <div class="thumb" style="${thumbStyle}">${a.image ? '' : a.icon}</div>
+      <div class="info">
+        <h4>${escapeHtml(a.name)} ${!a.active ? '<span class="pill-inactive">inactive</span>' : ''}</h4>
+        <div class="meta">${escapeHtml(a.category||'')} · ${fmtMoney(a.price)}/person ${discountLabel?'· '+discountLabel:''} ${a.hours?'· '+escapeHtml(a.hours):''}</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" data-edit-activity="${a.id}">Edit</button>
+        <button class="btn btn-outline btn-sm" data-manage-avail="${a.id}">Availability</button>
+        <button class="btn ${a.active?'btn-danger':'btn-primary'} btn-sm" data-toggle-active="${a.id}">${a.active?'Deactivate':'Activate'}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const availSection = state.availEditingId ? renderAvailabilityEditor(state.availEditingId) : '';
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="Activities &amp; availability">Activities &amp; availability</div>
+      <div class="page-sub" tr="Add, edit, or deactivate experiences, and manage which dates are blocked for each one.">Add, edit, or deactivate experiences, and manage which dates are blocked for each one.</div>
+    </div>
+    <button class="btn btn-primary" id="addActivityBtn">+ Add activity</button>
+  </div>
+  <div class="card">${rows || '<p style="color:var(--ink-soft);">No activities yet.</p>'}</div>
+  ${availSection}`;
+}
+
+function renderAvailabilityEditor(activityId){
+  const a = activityById(activityId);
+  if(!a) return '';
+  const { y, m } = state.availMonth;
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const monthLabel = first.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  const blocked = state.availability[activityId] || [];
+  const canGoPrev = new Date(y,m,1) > new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  const canGoNext = new Date(y,m+1,1) <= MAX_DATE;
+
+  let cells = '';
+  const dows = ['S','M','T','W','T','F','S'];
+  cells += dows.map(d=>`<div class="admin-cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) cells += `<div class="avail-day out-range"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(y,m,d);
+    const iso = fmtDate(dateObj);
+    const isPast = dateObj < TODAY;
+    const isBlocked = blocked.includes(iso);
+    cells += `<button type="button" class="avail-day ${isBlocked?'blocked':''} ${isPast?'past':''}" ${isPast?'disabled':''} data-avail-day="${iso}">${d}</button>`;
+  }
+
+  return `
+  <div class="card">
+    <div class="page-head" style="margin-bottom:14px;">
+      <div>
+        <h3>${a.icon} ${escapeHtml(a.name)} — availability</h3>
+        <div class="stat-sub" style="margin-top:4px;">Click a date to block or unblock it. Blocked dates won't be selectable on the booking site.</div>
+      </div>
+      <button class="btn btn-outline btn-sm" id="closeAvailEditor">Done</button>
+    </div>
+    <div class="admin-cal-head">
+      <button data-avail-nav="prev" ${canGoPrev?'':'disabled'} aria-label="Previous month">‹</button>
+      <div class="admin-cal-title">${monthLabel}</div>
+      <button data-avail-nav="next" ${canGoNext?'':'disabled'} aria-label="Next month">›</button>
+    </div>
+    <div class="admin-cal-grid" style="grid-template-columns:repeat(7,1fr); margin-top:12px;">${cells}</div>
+  </div>`;
+}
+
+function openActivityEditor(activityId){
+  const isNew = !activityId;
+  const a = isNew
+    ? { id:uid('act'), name:'', category:'', icon:'🌊', image:'', shortDesc:'', longDesc:'', durationLabel:'', hours:'', price:0, active:true, discount:null, highlights:[], included:[], bring:[], meetingPoint:'' }
+    : JSON.parse(JSON.stringify(activityById(activityId)));
+  showModal(buildActivityFormHtml(a, isNew));
+}
+
+function buildActivityFormHtml(a, isNew){
+  return `
+  <h3 style="padding-right:30px;">${isNew?'Add new activity':'Edit activity'}</h3>
+  <div class="field-grid" style="margin-top:18px;">
+    <div class="field"><label>Name</label><input type="text" id="af_name" value="${escapeAttr(a.name)}"></div>
+    <div class="field"><label>Category</label><input type="text" id="af_category" value="${escapeAttr(a.category)}" placeholder="Diving, Snorkeling…"></div>
+    <div class="field"><label>Icon (emoji)</label><input type="text" id="af_icon" value="${escapeAttr(a.icon)}" maxlength="4"></div>
+    <div class="field"><label>Image URL (optional — leave blank to use a color gradient)</label><input type="text" id="af_image" value="${escapeAttr(a.image||'')}" placeholder="https://…"></div>
+    <div class="field"><label>Price per person (MX$)</label><input type="number" min="0" id="af_price" value="${a.price}"></div>
+    <div class="field"><label>Duration label</label><input type="text" id="af_duration" value="${escapeAttr(a.durationLabel||'')}" placeholder="4 hrs · morning"></div>
+    <div class="field"><label>Hours</label><input type="text" id="af_hours" value="${escapeAttr(a.hours||'')}" placeholder="Departs 8:00 AM · Returns 12:00 PM"></div>
+    <div class="field"><label>Discount type</label>
+      <select id="af_discount_type">
+        <option value="" ${!a.discount?'selected':''}>No discount</option>
+        <option value="percent" ${a.discount&&a.discount.type==='percent'?'selected':''}>Percent (%)</option>
+        <option value="amount" ${a.discount&&a.discount.type==='amount'?'selected':''}>Fixed amount (MX$)</option>
+      </select>
+    </div>
+    <div class="field"><label>Discount value</label><input type="number" min="0" id="af_discount_value" value="${a.discount?a.discount.value:0}"></div>
+    <div class="field" style="grid-column:1/-1;"><label>Short description (shown on the card)</label><textarea id="af_shortdesc">${escapeHtml(a.shortDesc||'')}</textarea></div>
+    <div class="field" style="grid-column:1/-1;"><label>Long description (shown in "More information")</label><textarea id="af_longdesc">${escapeHtml(a.longDesc||'')}</textarea></div>
+    <div class="field"><label>Highlights (one per line)</label><textarea id="af_highlights">${(a.highlights||[]).join('\n')}</textarea></div>
+    <div class="field"><label>What's included (one per line)</label><textarea id="af_included">${(a.included||[]).join('\n')}</textarea></div>
+    <div class="field"><label>What to bring (one per line)</label><textarea id="af_bring">${(a.bring||[]).join('\n')}</textarea></div>
+    <div class="field"><label>Meeting point</label><textarea id="af_meeting">${escapeHtml(a.meetingPoint||'')}</textarea></div>
+  </div>
+  <div style="display:flex; gap:10px; margin-top:20px;">
+    <button class="btn btn-primary" data-save-activity="${a.id}" data-is-new="${isNew?'1':'0'}">Save activity</button>
+    ${!isNew ? `<button class="btn btn-danger" data-delete-activity="${a.id}">Delete activity</button>` : ''}
+  </div>`;
+}
+
+async function saveActivityFromForm(activityId, isNew){
+  const get = id => document.getElementById(id).value;
+  const discountType = get('af_discount_type');
+  const discountVal = Number(get('af_discount_value'))||0;
+  const existing = activityById(activityId);
+  const activityData = {
+    id: activityId,
+    name: get('af_name').trim() || 'Untitled experience',
+    category: get('af_category').trim() || 'General',
+    icon: get('af_icon').trim() || '🌊',
+    image: get('af_image').trim() || null,
+    price: Number(get('af_price'))||0,
+    durationLabel: get('af_duration').trim(),
+    hours: get('af_hours').trim(),
+    discount: discountType ? { type: discountType, value: discountVal } : null,
+    shortDesc: get('af_shortdesc').trim(),
+    longDesc: get('af_longdesc').trim(),
+    highlights: get('af_highlights').split('\n').map(s=>s.trim()).filter(Boolean),
+    included: get('af_included').split('\n').map(s=>s.trim()).filter(Boolean),
+    bring: get('af_bring').split('\n').map(s=>s.trim()).filter(Boolean),
+    meetingPoint: get('af_meeting').trim(),
+    active: existing ? existing.active : true,
+  };
+  if(isNew){ state.activities.push(activityData); }
+  else{
+    const idx = state.activities.findIndex(x=>x.id===activityId);
+    if(idx>-1) state.activities[idx] = activityData;
+  }
+  await storeSet(SK.activities, state.activities, true);
+  showToast('Activity saved.');
+  closeModal();
+  renderTab();
+}
+async function deleteActivityConfirmed(activityId){
+  state.activities = state.activities.filter(a=>a.id!==activityId);
+  await storeSet(SK.activities, state.activities, true);
+  showToast('Activity deleted.');
+  closeModal();
+  renderTab();
+}
+async function toggleActivityActive(activityId){
+  const a = activityById(activityId);
+  if(!a) return;
+  a.active = !a.active;
+  await storeSet(SK.activities, state.activities, true);
+  renderTab();
+}
+async function toggleAvailabilityDay(activityId, iso){
+  if(!activityId) return;
+  if(!state.availability[activityId]) state.availability[activityId] = [];
+  const list = state.availability[activityId];
+  const idx = list.indexOf(iso);
+  if(idx>-1) list.splice(idx,1); else list.push(iso);
+  await storeSet(SK.availability, state.availability, true);
+  renderTab();
+}
+
+/* =======================================================================
+   CLIENTS (CRM) TAB — with birthday reminders
+   ======================================================================= */
+function allClientsList(){
+  return Object.keys(state.clients).map(email=>{
+    const rec = state.clients[email] || { history: [] };
+    const latest = rec.history[rec.history.length-1] || {};
+    const snap = latest.snapshot || {};
+    return {
+      email, fullName: snap.fullName || '—', dob: snap.dob || '', language: snap.language || 'en',
+      visits: rec.history.length, lastVisit: latest.date || '', allergies: snap.allergies || '', history: rec.history || []
+    };
+  });
+}
+function birthdaysThisMonth(){
+  const curMonth = TODAY.getMonth();
+  return allClientsList().filter(c => c.dob && parseDate(c.dob).getMonth() === curMonth);
+}
+function renderClientsTab(){
+  const q = (state.clientsSearch||'').toLowerCase();
+  let clients = allClientsList();
+  if(q) clients = clients.filter(c => (c.fullName+' '+c.email).toLowerCase().includes(q));
+  clients.sort((a,b)=> (b.lastVisit||'').localeCompare(a.lastVisit||''));
+  const birthdays = birthdaysThisMonth();
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="Clients">Clients</div>
+      <div class="page-sub" tr="Everyone who has given an email, with their visit history.">Everyone who has given an email, with their visit history.</div>
+    </div>
+  </div>
+
+  ${birthdays.length ? `
+  <div class="card" style="background:var(--warn-bg);">
+    <div class="section-title" style="color:#7a5c00;">🎂 Birthdays this month</div>
+    ${birthdays.map(c=>`<span class="birthday-chip">${escapeHtml(c.fullName)} <button class="btn-text" style="padding:0; font-size:12px; color:#7a5c00; text-decoration:underline;" data-send-birthday="${escapeAttr(c.email)}">Send congratulations</button></span>`).join('')}
+  </div>` : ''}
+
+  <div class="toolbar">
+    <input type="text" id="clientsSearch" placeholder="Search by name or email…" value="${escapeAttr(state.clientsSearch||'')}">
+    <span class="stat-sub" style="margin-left:auto;">${clients.length} client${clients.length!==1?'s':''}</span>
+  </div>
+
+  <div class="card" style="padding:0; overflow-x:auto;">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Visits</th><th>Last visit</th><th>Language</th></tr></thead>
+      <tbody>
+        ${clients.map(c=>`
+          <tr class="table-row" data-open-client="${escapeAttr(c.email)}">
+            <td>${escapeHtml(c.fullName)}</td>
+            <td>${escapeHtml(c.email)}</td>
+            <td>${c.visits}</td>
+            <td>${c.lastVisit ? fmtDateHuman(c.lastVisit) : '—'}</td>
+            <td>${(c.language||'en').toUpperCase()}</td>
+          </tr>`).join('') || `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--ink-soft);">No clients yet.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+function openClientDetail(email){
+  const rec = state.clients[email];
+  if(!rec) return;
+  const historyHtml = rec.history.slice().reverse().map(h=>`
+    <div class="client-card">
+      <h4>${fmtDateHuman(h.date)} ${h.bookingCode ? '· #'+h.bookingCode : ''}</h4>
+      <div class="meta">${escapeHtml((h.snapshot&&h.snapshot.fullName)||'')} · ${escapeHtml((h.snapshot&&h.snapshot.gender)||'')} · Allergies: ${escapeHtml((h.snapshot&&h.snapshot.allergies)||'—')}</div>
+      ${h.snapshot && h.snapshot.notes ? `<div class="meta">Notes: ${escapeHtml(h.snapshot.notes)}</div>` : ''}
+    </div>`).join('');
+  showModal(`
+    <h3 style="padding-right:30px;">${escapeHtml(email)}</h3>
+    <div class="stat-sub" style="margin:6px 0 16px;">${rec.history.length} visit${rec.history.length!==1?'s':''} on record</div>
+    ${historyHtml}
+  `);
+}
+function sendBirthdayEmail(email){
+  const c = allClientsList().find(x=>x.email===email);
+  if(!c) return;
+  const lang = c.language==='es' ? 'es' : 'en';
+  const firstName = (c.fullName||'').split(' ')[0] || 'friend';
+  const templates = {
+    en: `Happy birthday, ${firstName}! 🎉 From all of us at Hidrosfera, we hope your day is as wonderful as a morning on the Sea of Cortez. Come back and dive, snorkel, or sail with us again soon!`,
+    es: `¡Feliz cumpleaños, ${firstName}! 🎉 De parte de todo el equipo de Hidrosfera, esperamos que tu día sea tan maravilloso como una mañana en el Mar de Cortés. ¡Ven a bucear, esnorquelear o navegar con nosotros pronto!`
+  };
+  showModal(`
+    <h3 style="padding-right:30px;">Birthday message preview (${lang.toUpperCase()})</h3>
+    <div class="field" style="margin-top:16px;"><label>To</label><input type="text" value="${escapeAttr(email)}" disabled></div>
+    <div class="field"><label>Message</label><textarea id="bdayMessage" style="min-height:120px;">${templates[lang]}</textarea></div>
+    <button class="btn btn-primary" data-confirm-send-birthday="${escapeAttr(email)}">Send</button>
+  `);
+}
+function confirmSendBirthday(email){
+  showToast(`Simulated: birthday message sent to ${email}. Connect a real mail provider to send for real (see chat).`);
+  closeModal();
+}
+
+/* =======================================================================
+   PAYMENTS TAB
+   ======================================================================= */
+function paymentsData(){
+  const filter = state.paymentsFilter;
+  let total = 0, depositsTotal = 0, count = 0;
+  const byActivity = {};
+  state.bookings.forEach(b=>{
+    if(b.status === 'cancelled') return;
+    const createdDate = (b.createdAt||'').slice(0,10);
+    if(filter.from && createdDate < filter.from) return;
+    if(filter.to && createdDate > filter.to) return;
+    let bookingTotal = 0;
+    (b.activities||[]).forEach(act=>{
+      if(filter.activityId !== 'all' && act.activityId !== filter.activityId) return;
+      const n = (act.assignedPersonIds||[]).length;
+      const amt = (act.unitPrice||0) * n;
+      bookingTotal += amt;
+      byActivity[act.activityId] = (byActivity[act.activityId]||0) + amt;
+    });
+    if(bookingTotal > 0){ total += bookingTotal; depositsTotal += (b.deposit||0); count++; }
+  });
+  return { total, depositsTotal, count, byActivity };
+}
+function renderPaymentsTab(){
+  const { total, depositsTotal, count, byActivity } = paymentsData();
+  const maxVal = Math.max(1, ...Object.values(byActivity));
+  const bars = Object.entries(byActivity).sort((a,b)=>b[1]-a[1]).map(([id,val])=>{
+    const a = activityById(id);
+    const h = Math.max(2, Math.round((val/maxVal)*100));
+    return `<div class="bar-chart-col">
+      <div class="bar-chart-bar" style="height:${h}%;" title="${fmtMoney(val)}"></div>
+      <div class="bar-chart-label">${a?a.icon:'?'}<br>${fmtMoney(val)}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="page-head">
+    <div><div class="page-title" tr="Payments">Payments</div><div class="page-sub" tr="Revenue overview across all non-cancelled bookings.">Revenue overview across all non-cancelled bookings.</div></div>
+  </div>
+  <div class="toolbar">
+    <select id="paymentsActivityFilter">
+      <option value="all">All experiences</option>
+      ${state.activities.map(a=>`<option value="${a.id}" ${state.paymentsFilter.activityId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+    </select>
+    <input type="date" id="paymentsFrom" value="${state.paymentsFilter.from||''}">
+    <span style="color:var(--ink-soft); font-size:13px;">to</span>
+    <input type="date" id="paymentsTo" value="${state.paymentsFilter.to||''}">
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Total revenue</div><div class="stat-value">${fmtMoney(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Deposits collected</div><div class="stat-value">${fmtMoney(depositsTotal)}</div></div>
+    <div class="stat-card"><div class="stat-label">Bookings counted</div><div class="stat-value">${count}</div></div>
+  </div>
+  <div class="card">
+    <div class="section-title">Revenue by experience</div>
+    <div class="bar-chart">${bars || '<p style="color:var(--ink-soft);">No revenue data yet.</p>'}</div>
+  </div>`;
+}
+
+/* =======================================================================
+   SETTINGS TAB
+   ======================================================================= */
+function renderSettingsTab(){
+  return `
+  <div class="page-head"><div><div class="page-title" tr="Settings">Settings</div><div class="page-sub" tr="Notification email and admin password.">Notification email and admin password.</div></div></div>
+  <div class="card">
+    <div class="section-title">Notifications</div>
+    <div class="field"><label>Email to receive new-booking notifications</label><input type="email" id="settingsNotifyEmail" value="${escapeAttr(state.settings.notifyEmail||'')}"></div>
+    <button class="btn btn-primary btn-sm" id="saveNotifyEmailBtn">Save</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Admin password</div>
+    <div class="field-grid">
+      <div class="field"><label>New password</label><input type="password" id="settingsNewPassword" placeholder="Leave blank to keep current"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" id="settingsConfirmPassword"></div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="savePasswordBtn">Update password</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Test data</div>
+    <p style="color:var(--ink-soft); font-size:13.5px; line-height:1.6; margin-bottom:14px;">
+      The booking calendar, all-bookings table, clients, and payments tabs only show something once real bookings exist. Load a batch of realistic sample bookings (mixed statuses, dates, and a couple of birthdays this month) to explore the interface, or clear it all when you're done testing.
+    </p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" id="loadSampleDataBtn">+ Load sample bookings</button>
+      <button class="btn btn-danger btn-sm" id="clearSampleDataBtn">Clear all bookings &amp; clients</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">Integration notes</div>
+    <p style="color:var(--ink-soft); font-size:13.5px; line-height:1.6;">Real email sending, a production database, and secure server-side authentication all need a small backend — this password gate is client-side only and fine for prototyping, but see the chat conversation for exactly how to wire up the real versions.</p>
+  </div>`;
+}
+async function saveNotifyEmail(){
+  const val = document.getElementById('settingsNotifyEmail').value.trim();
+  state.settings.notifyEmail = val;
+  await storeSet(SK.settings, state.settings, true);
+  showToast('Notification email saved.');
+}
+async function saveAdminPassword(){
+  const pw = document.getElementById('settingsNewPassword').value;
+  const confirmPw = document.getElementById('settingsConfirmPassword').value;
+  if(!pw){ showToast('Enter a new password first.'); return; }
+  if(pw !== confirmPw){ showToast('Passwords do not match.'); return; }
+  state.settings.adminPassword = pw;
+  await storeSet(SK.settings, state.settings, true);
+  showToast('Admin password updated.');
+  document.getElementById('settingsNewPassword').value = '';
+  document.getElementById('settingsConfirmPassword').value = '';
+}
+
+/* =======================================================================
+   TEST DATA GENERATOR — populates realistic sample bookings/clients so
+   the calendar, bookings table, clients, and payments tabs have
+   something to show. Purely for exploring the interface; real bookings
+   come from the customer booking site (hidrosfera-booking.html).
+   ======================================================================= */
+async function loadSampleData(){
+  if(!state.activities || state.activities.length === 0){
+    showToast('No activities found yet — open the booking site once first so activities get seeded, then try again.');
+    return;
+  }
+  const acts = state.activities.slice(0, Math.min(6, state.activities.length));
+  const firstNames = ['Ana','Carlos','Maria','John','Emily','Diego','Sophie','Luis','Grace','Miguel','Karla','Tom'];
+  const lastNames = ['Garcia','Smith','Lopez','Johnson','Martinez','Brown','Hernandez','Davis','Torres','Wilson'];
+  const nationalities = ['Mexico','United States','Canada','Spain','Germany','Argentina'];
+  const statuses = ['pending','confirmed','cancelled','done'];
+  const clientsDb = await storeGet(SK.clients, true) || {};
+  const sampleBookings = [];
+
+  function randDate(offsetMin, offsetMax){
+    const days = offsetMin + Math.floor(Math.random()*(offsetMax-offsetMin));
+    const d = new Date(TODAY); d.setDate(d.getDate()+days);
+    return d;
+  }
+  function randomPerson(forcedDobMonth, forceEmail){
+    const fn = firstNames[Math.floor(Math.random()*firstNames.length)];
+    const ln = lastNames[Math.floor(Math.random()*lastNames.length)];
+    const dobMonth = forcedDobMonth != null ? forcedDobMonth : Math.floor(Math.random()*12);
+    const dobYear = 1965 + Math.floor(Math.random()*40);
+    const dobDay = 1 + Math.floor(Math.random()*28);
+    const dob = `${dobYear}-${String(dobMonth+1).padStart(2,'0')}-${String(dobDay).padStart(2,'0')}`;
+    const gender = Math.random() > 0.5 ? 'Male' : 'Female';
+    return {
+      id: uid('p'), fullName: `${fn} ${ln}`, gender,
+      nationality: nationalities[Math.floor(Math.random()*nationalities.length)],
+      dob, dobDay:String(dobDay), dobMonth:String(dobMonth+1), dobYear:String(dobYear),
+      allergies: Math.random() > 0.75 ? 'Shellfish allergy' : 'None',
+      email: forceEmail || '', language: Math.random() > 0.5 ? 'en' : 'es', notes:'',
+      needsRental: Math.random() > 0.35, knowSizes: true, height:'', heightUnit:'cm', weight:'', weightUnit:'kg',
+      ownRegulatorBrought: Math.random() > 0.8, ownRegulatorIsDIN: Math.random() > 0.5,
+      items: {
+        bcd:{ checked: Math.random()>0.5, size:'M' }, wetsuit:{ checked: Math.random()>0.5, size:'M' },
+        mask:{ checked: Math.random()>0.4 }, regulator:{ checked: Math.random()>0.6 },
+        computer:{ checked: Math.random()>0.7 }, fins:{ checked: Math.random()>0.4, size: gender==='Male'?'Men:M':'Women:M' }
+      }
+    };
+  }
+
+  for(let i=0; i<12; i++){
+    const activity = acts[i % acts.length];
+    const status = statuses[i % statuses.length];
+    const numPeople = 1 + Math.floor(Math.random()*3);
+    const forcedBirthdayMonth = (i===2 || i===7) ? TODAY.getMonth() : null;
+    const mainEmail = `sample.${firstNames[i%firstNames.length].toLowerCase()}${i}@example.com`;
+    const mainPerson = randomPerson(forcedBirthdayMonth, mainEmail);
+    const people = [mainPerson];
+    for(let p=1; p<numPeople; p++) people.push(randomPerson());
+
+    const dateRange = status==='done' ? [-70,-4] : status==='cancelled' ? [-15,45] : [2,75];
+    const dateObj = randDate(dateRange[0], dateRange[1]);
+    let endDate = null;
+    if(Math.random() > 0.75){
+      const endObj = new Date(dateObj); endObj.setDate(endObj.getDate() + 1 + Math.floor(Math.random()*2));
+      endDate = fmtDate(endObj);
+    }
+    const unitPrice = activity.discount
+      ? (activity.discount.type==='percent' ? Math.round(activity.price*(1-activity.discount.value/100)) : Math.max(0, activity.price-activity.discount.value))
+      : activity.price;
+    const total = unitPrice * numPeople;
+    const deposit = (status==='confirmed' || status==='done') ? Math.round(total*0.3) : 0;
+    const createdAt = new Date(dateObj); createdAt.setDate(createdAt.getDate() - (6 + Math.floor(Math.random()*14)));
+
+    const booking = {
+      id: uid('bk'),
+      bookingCode: `HDS-${dateObj.getFullYear()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,
+      createdAt: createdAt.toISOString(), status,
+      pageLanguage: mainPerson.language, sameAsFirst: true,
+      mainContact: { fullName: mainPerson.fullName, gender: mainPerson.gender, nationality: mainPerson.nationality, dob: mainPerson.dob, dobDay: mainPerson.dobDay, dobMonth: mainPerson.dobMonth, dobYear: mainPerson.dobYear, allergies: mainPerson.allergies, email: mainEmail, language: mainPerson.language, notes:'' },
+      people,
+      activities: [{ activityId: activity.id, date: fmtDate(dateObj), endDate, assignedPersonIds: people.map(p=>p.id), unitPrice }],
+      total, deposit
+    };
+    sampleBookings.push(booking);
+
+    if(!clientsDb[mainEmail]) clientsDb[mainEmail] = { history: [] };
+    clientsDb[mainEmail].history.push({ date: fmtDate(dateObj), bookingCode: booking.bookingCode, snapshot: JSON.parse(JSON.stringify(mainPerson)) });
+  }
+
+  state.bookings = state.bookings.concat(sampleBookings);
+  state.clients = clientsDb;
+  await storeSet(SK.bookings, state.bookings, true);
+  await storeSet(SK.clients, state.clients, true);
+  showToast(`Loaded ${sampleBookings.length} sample bookings — check the Calendar, All Bookings, Clients, and Payments tabs.`);
+  renderTab();
+}
+
+async function clearSampleData(){
+  if(!window.confirm('This deletes every booking and client record (real or sample). Continue?')) return;
+  state.bookings = [];
+  state.clients = {};
+  await storeSet(SK.bookings, state.bookings, true);
+  await storeSet(SK.clients, state.clients, true);
+  showToast('All bookings and clients cleared.');
+  renderTab();
+}
+
+/* =======================================================================
+   GLOBAL EVENT DELEGATION
+   ======================================================================= */
+document.addEventListener('click', (e)=>{
+  const t = e.target;
+
+  const tabBtn = t.closest('[data-tab]'); if(tabBtn){ switchTab(tabBtn.dataset.tab); return; }
+  if(t.id === 'loginBtn'){ attemptLogin(); return; }
+  if(t.id === 'logoutBtn'){ logout(); return; }
+
+  const openBooking = t.closest('[data-open-booking]'); if(openBooking){ openBookingDetail(openBooking.dataset.openBooking); return; }
+  const setStatus = t.closest('[data-set-status]'); if(setStatus){ adminSetBookingStatus(setStatus.dataset.setStatus, setStatus.dataset.newStatus); return; }
+  const saveDeposit = t.closest('[data-save-deposit]'); if(saveDeposit){ adminSaveDeposit(saveDeposit.dataset.saveDeposit); return; }
+  const resendEmail = t.closest('[data-resend-email]'); if(resendEmail){ adminResendEmail(resendEmail.dataset.resendEmail); return; }
+
+  if(t.id === 'addActivityBtn'){ openActivityEditor(null); return; }
+  const editAct = t.closest('[data-edit-activity]'); if(editAct){ openActivityEditor(editAct.dataset.editActivity); return; }
+  const saveAct = t.closest('[data-save-activity]'); if(saveAct){ saveActivityFromForm(saveAct.dataset.saveActivity, saveAct.dataset.isNew==='1'); return; }
+  const delAct = t.closest('[data-delete-activity]'); if(delAct){ if(window.confirm('Delete this activity? This cannot be undone.')) deleteActivityConfirmed(delAct.dataset.deleteActivity); return; }
+  const toggleAct = t.closest('[data-toggle-active]'); if(toggleAct){ toggleActivityActive(toggleAct.dataset.toggleActive); return; }
+  const manageAvail = t.closest('[data-manage-avail]'); if(manageAvail){ state.availEditingId = manageAvail.dataset.manageAvail; state.availMonth = { y: TODAY.getFullYear(), m: TODAY.getMonth() }; renderTab(); return; }
+  if(t.id === 'closeAvailEditor'){ state.availEditingId = null; renderTab(); return; }
+  const availNav = t.closest('[data-avail-nav]');
+  if(availNav){
+    let { y, m } = state.availMonth;
+    if(availNav.dataset.availNav==='prev'){ m--; if(m<0){m=11;y--;} } else { m++; if(m>11){m=0;y++;} }
+    state.availMonth = { y, m }; renderTab(); return;
+  }
+  const availDay = t.closest('[data-avail-day]'); if(availDay && !availDay.disabled){ toggleAvailabilityDay(state.availEditingId, availDay.dataset.availDay); return; }
+
+  const calNav = t.closest('[data-admin-cal-nav]');
+  if(calNav){
+    let { y, m } = state.calMonth;
+    if(calNav.dataset.adminCalNav==='prev'){ m--; if(m<0){m=11;y--;} } else { m++; if(m>11){m=0;y++;} }
+    state.calMonth = { y, m }; renderTab(); return;
+  }
+  const yearNav = t.closest('[data-year-nav-month]');
+  if(yearNav){
+    state.calMonth = { y: Number(yearNav.dataset.yearNavYear), m: Number(yearNav.dataset.yearNavMonth) };
+    renderTab();
+    window.scrollTo({top:0, behavior:'smooth'});
+    return;
+  }
+  const yearOverviewNav = t.closest('[data-year-overview-nav]');
+  if(yearOverviewNav){
+    state.calMonth = { y: state.calMonth.y + (yearOverviewNav.dataset.yearOverviewNav==='prev' ? -1 : 1), m: state.calMonth.m };
+    renderTab();
+    return;
+  }
+
+  const openClient = t.closest('[data-open-client]'); if(openClient){ openClientDetail(openClient.dataset.openClient); return; }
+  const sendBday = t.closest('[data-send-birthday]'); if(sendBday){ sendBirthdayEmail(sendBday.dataset.sendBirthday); return; }
+  const confirmBday = t.closest('[data-confirm-send-birthday]'); if(confirmBday){ confirmSendBirthday(confirmBday.dataset.confirmSendBirthday); return; }
+
+  if(t.id === 'saveNotifyEmailBtn'){ saveNotifyEmail(); return; }
+  if(t.id === 'savePasswordBtn'){ saveAdminPassword(); return; }
+  if(t.id === 'loadSampleDataBtn'){ loadSampleData(); return; }
+  if(t.id === 'clearSampleDataBtn'){ clearSampleData(); return; }
+});
+
+document.addEventListener('change', (e)=>{
+  const t = e.target;
+  if(t.id === 'bookingsStatusFilter'){ state.bookingsFilter.status = t.value; renderTab(); return; }
+  if(t.id === 'paymentsActivityFilter'){ state.paymentsFilter.activityId = t.value; renderTab(); return; }
+  if(t.id === 'paymentsFrom'){ state.paymentsFilter.from = t.value; renderTab(); return; }
+  if(t.id === 'paymentsTo'){ state.paymentsFilter.to = t.value; renderTab(); return; }
+});
+document.addEventListener('input', (e)=>{
+  const t = e.target;
+  if(t.id === 'bookingsSearch'){ state.bookingsFilter.q = t.value; renderTab(); return; }
+  if(t.id === 'clientsSearch'){ state.clientsSearch = t.value; renderTab(); return; }
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.target && e.target.id === 'adminPasswordInput' && e.key === 'Enter') attemptLogin();
+});
+
+/* =======================================================================
+   INIT
+   ======================================================================= */
+async function init(){
+  await loadAll();
+  const session = await storeGet(SESSION_KEY, false);
+  if(session && session.loggedIn){ enterApp(); }
+}
+init();
+
+</script>
+</body>
+</html>

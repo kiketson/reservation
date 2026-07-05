@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hidrosfera — Baja California Sur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Public+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   HIDROSFERA — DESIGN TOKENS
+   Palette drawn from the Sea of Cortez: deep offshore blue,
+   lagoon teal shallows, sun-bleached sand, coral accent.
+   ============================================================ */
+:root{
+  --deep:      #0B3D4C;   /* offshore water / primary dark   */
+  --deep-2:    #082B36;   /* deeper shade for gradients       */
+  --teal:      #1C7C82;   /* lagoon / interactive accent      */
+  --teal-lt:   #2E9AA0;
+  --sand:      #EDE4D3;   /* page background                  */
+  --sand-2:    #E3D7C0;
+  --foam:      #FBFAF7;   /* card surfaces                    */
+  --coral:     #E8734A;   /* CTA / highlight accent           */
+  --coral-dk:  #C85A34;
+  --ink:       #10262B;   /* body text                        */
+  --ink-soft:  #4A5D61;
+  --line:      #D9CEB8;
+  --ok:        #2E7D4F;
+  --ok-bg:     #E6F2EA;
+  --warn:      #B8860B;
+  --warn-bg:   #FBF3DD;
+  --err:       #C0392B;
+  --err-bg:    #FBEAE7;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 22px;
+  --shadow-card: 0 1px 2px rgba(11,61,76,.06), 0 8px 24px rgba(11,61,76,.08);
+  --shadow-pop: 0 12px 40px rgba(11,61,76,.22);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family: var(--font-body);
+  background: var(--sand);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  min-height:100vh;
+}
+h1,h2,h3,h4{font-family:var(--font-display); font-weight:600; margin:0; color:var(--deep);}
+p{margin:0;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+::selection{ background: var(--coral); color:#fff; }
+:focus-visible{ outline:3px solid var(--coral); outline-offset:2px; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+
+.hidden{ display:none !important; }
+.container{ max-width:1180px; margin:0 auto; padding:0 28px; }
+
+/* ============================================================
+   TOP MASTHEAD (kept minimal — brand only, not the tracker)
+   ============================================================ */
+.masthead{
+  background: linear-gradient(180deg, var(--deep) 0%, var(--deep-2) 100%);
+  color: var(--foam);
+  padding: 22px 0;
+}
+.masthead .container{ display:flex; align-items:center; justify-content:space-between; }
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{ width:38px; height:38px; flex-shrink:0; }
+.brand-name{ font-family:var(--font-display); font-size:22px; font-weight:600; letter-spacing:.01em; }
+.brand-tag{ font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal-lt); margin-top:2px; }
+.masthead-right{ display:flex; align-items:center; gap:18px; font-size:14px; color:var(--sand); }
+.lang-switch{ display:flex; gap:4px; background:rgba(255,255,255,.08); border-radius:999px; padding:4px; }
+.lang-switch button{
+  border:none; background:transparent; color:var(--sand); padding:6px 12px; border-radius:999px; font-size:13px; font-weight:600;
+  transition: background .2s, color .2s;
+}
+.lang-switch button.active{ background:var(--coral); color:#fff; }
+
+/* ============================================================
+   SIGNATURE ELEMENT — the "tide line" step tracker.
+   A wavy channel that fills with rising water as the visitor
+   completes each step; a boat marker sits at the current step.
+   This sits BELOW the masthead, sticky, so people always know
+   where they are in the booking.
+   ============================================================ */
+.tideband{
+  position: sticky; top:0; z-index:40;
+  background: var(--foam);
+  border-bottom:1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(11,61,76,.06);
+}
+.tideband-inner{ position:relative; padding: 18px 28px 10px; max-width:1180px; margin:0 auto; }
+.tide-svg{ width:100%; height:34px; display:block; }
+.tide-steps{ display:flex; justify-content:space-between; margin-top:2px; }
+.tide-step{ flex:1; text-align:center; position:relative; }
+.tide-step-label{
+  font-family:var(--font-mono); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase;
+  color: var(--ink-soft); font-weight:500; transition: color .3s, font-weight .3s;
+}
+.tide-step.is-current .tide-step-label{ color: var(--coral-dk); font-weight:700; }
+.tide-step.is-done .tide-step-label{ color: var(--teal); }
+.tide-step-num{ font-family:var(--font-mono); font-size:10px; color:var(--ink-soft); opacity:.6; }
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+main{ padding-bottom: 140px; min-height: 60vh; }
+.step-panel{ padding: 36px 0 20px; animation: rise .45s ease; }
+@keyframes rise{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+.eyebrow{
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+  margin-bottom:8px; display:block;
+}
+.step-title{ font-size: clamp(28px, 4vw, 40px); margin-bottom:8px; }
+.step-sub{ color:var(--ink-soft); font-size:16px; max-width:640px; line-height:1.5; margin-bottom:32px; }
+
+/* ============================================================
+   ACTIVITIES GRID
+   ============================================================ */
+.activities-grid{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:24px;
+}
+.activity-card{
+  background: var(--foam); border-radius: var(--radius-l); overflow:hidden; box-shadow: var(--shadow-card);
+  border: 2px solid transparent; transition: transform .25s ease, box-shadow .25s ease, border-color .2s ease;
+  display:flex; flex-direction:column; position:relative;
+}
+.activity-card:hover{ transform: translateY(-4px); box-shadow: 0 16px 40px rgba(11,61,76,.16); }
+.activity-card.is-selected{ border-color: var(--coral); }
+.activity-media{
+  height:150px; position:relative; display:flex; align-items:flex-end; padding:14px;
+  color:#fff; overflow:hidden;
+}
+.activity-media::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,61,76,0) 30%, rgba(8,32,40,.55) 100%); }
+.activity-media-icon{ font-size:38px; position:relative; z-index:1; filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
+.activity-category{
+  position:absolute; top:12px; left:12px; z-index:2; background:rgba(251,250,247,.92); color:var(--deep);
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px; font-weight:600;
+}
+.activity-body{ padding:18px 18px 20px; display:flex; flex-direction:column; gap:10px; flex:1; }
+.activity-name{ font-size:19px; line-height:1.25; }
+.activity-desc{ font-size:13.5px; color:var(--ink-soft); line-height:1.5; flex:1; }
+.activity-meta{ display:flex; gap:14px; font-size:12.5px; color:var(--ink-soft); font-family:var(--font-mono); }
+.activity-price-row{ display:flex; align-items:center; justify-content:space-between; margin-top:4px; }
+.activity-price{ font-family:var(--font-display); font-size:21px; color:var(--deep); font-weight:600; }
+.activity-price small{ font-family:var(--font-body); font-size:12px; color:var(--ink-soft); font-weight:400; }
+.activity-price .strike{ font-size:13px; text-decoration:line-through; color:var(--ink-soft); font-family:var(--font-body); margin-right:6px; }
+.discount-pill{ background:var(--coral); color:#fff; font-size:10.5px; font-family:var(--font-mono); padding:2px 8px; border-radius:999px; font-weight:700; }
+.select-toggle{
+  border:1.5px solid var(--deep); background:transparent; color:var(--deep); border-radius:999px; padding:9px 16px; font-weight:600; font-size:13.5px;
+  transition: all .2s ease; display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.select-toggle:hover{ background: var(--deep); color:#fff; }
+.activity-card.is-selected .select-toggle{ background: var(--coral); border-color:var(--coral); color:#fff; }
+.activity-links{ display:flex; gap:14px; margin-top:2px; }
+.activity-links button{ background:none; border:none; padding:0; font-size:12.5px; font-weight:600; color:var(--teal); }
+.activity-links button:hover{ text-decoration:underline; }
+.activity-links a{ font-size:12.5px; font-weight:600; color:var(--coral-dk); text-decoration:none; }
+.activity-links a:hover{ text-decoration:underline; }
+.chip-date{ font-family:var(--font-mono); font-size:11px; opacity:.85; margin-left:2px; }
+.info-list{ margin:0; padding-left:18px; font-size:13.5px; line-height:1.7; color:var(--ink-soft); }
+.info-block-title{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--teal); margin:16px 0 6px; }
+
+/* ============================================================
+   STICKY SELECTION BAR (lower div)
+   ============================================================ */
+.selection-bar{
+  position: fixed; left:0; right:0; bottom:0; z-index:50;
+  background: linear-gradient(180deg, var(--deep-2) 0%, var(--deep) 100%);
+  color:var(--foam);
+  box-shadow: 0 -8px 30px rgba(0,0,0,.25);
+  transform: translateY(110%); transition: transform .4s cubic-bezier(.2,.9,.25,1);
+}
+.selection-bar.is-visible{ transform: translateY(0); }
+.selection-bar-inner{
+  max-width:1180px; margin:0 auto; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+}
+.selection-list{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.selection-chip{
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); padding:6px 12px 6px 12px; border-radius:999px;
+  font-size:13px; display:flex; align-items:center; gap:8px; animation: chipIn .3s ease;
+}
+@keyframes chipIn{ from{opacity:0; transform:scale(.85);} to{opacity:1; transform:scale(1);} }
+.selection-chip button{ background:none; border:none; color:rgba(255,255,255,.7); font-size:15px; line-height:1; padding:0; }
+.selection-chip button:hover{ color:#fff; }
+.selection-total{ font-family:var(--font-mono); font-size:13px; color:var(--sand); }
+.btn{
+  border:none; border-radius:999px; padding:13px 26px; font-weight:700; font-size:14.5px; letter-spacing:.01em;
+  transition: transform .15s ease, box-shadow .15s ease, background .2s, opacity .2s; display:inline-flex; align-items:center; gap:8px;
+}
+.btn:active{ transform: scale(.97); }
+.btn-primary{ background: var(--coral); color:#fff; box-shadow:0 6px 18px rgba(232,115,74,.35); }
+.btn-primary:hover{ background: var(--coral-dk); }
+.btn-primary:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+.btn-ghost{ background: transparent; color: var(--foam); border:1.5px solid rgba(255,255,255,.3); }
+.btn-ghost:hover{ border-color:#fff; }
+.btn-outline{ background:transparent; color:var(--deep); border:1.5px solid var(--deep); }
+.btn-outline:hover{ background:var(--deep); color:#fff; }
+.btn-text{ background:none; color:var(--teal); font-weight:600; padding:8px 4px; }
+.btn-text:hover{ text-decoration:underline; }
+.btn-sm{ padding:8px 16px; font-size:13px; }
+
+/* ============================================================
+   FOOTER NAV (Back / Continue) — appears within each step panel
+   ============================================================ */
+.step-nav{ display:flex; justify-content:space-between; align-items:center; margin-top:40px; padding-top:24px; border-top:1px solid var(--line); }
+
+/* ============================================================
+   CALENDAR (dates step)
+   ============================================================ */
+.dates-activity-block{
+  background:var(--foam); border-radius:var(--radius-l); padding:26px; margin-bottom:26px; box-shadow:var(--shadow-card);
+  border:2px solid transparent;
+}
+.dates-activity-block.has-date{ border-color: var(--ok); }
+.dates-activity-block.missing-date{ border-color: var(--err); animation: shake .4s; }
+@keyframes shake{ 10%,90%{transform:translateX(-2px);} 20%,80%{transform:translateX(3px);} 30%,50%,70%{transform:translateX(-5px);} 40%,60%{transform:translateX(5px);} }
+.dates-activity-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+.dates-activity-title{ display:flex; align-items:center; gap:12px; }
+.dates-activity-title .ico{ font-size:26px; }
+.date-status-badge{ font-family:var(--font-mono); font-size:11.5px; padding:5px 12px; border-radius:999px; font-weight:600; letter-spacing:.03em; }
+.date-status-badge.pending{ background:var(--err-bg); color:var(--err); }
+.date-status-badge.done{ background:var(--ok-bg); color:var(--ok); }
+.cal-wrap{ display:flex; gap:24px; flex-wrap:wrap; }
+.cal-grid-wrap{ flex:0 1 300px; max-width:300px; }
+.cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.cal-head button{ background:var(--sand); border:none; width:26px; height:26px; border-radius:50%; font-size:14px; color:var(--deep); }
+.cal-head button:disabled{ opacity:.25; cursor:not-allowed; }
+.cal-month-label{ font-family:var(--font-display); font-weight:600; font-size:14px; color:var(--deep); }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.cal-dow{ text-align:center; font-family:var(--font-mono); font-size:9.5px; color:var(--ink-soft); padding-bottom:4px; text-transform:uppercase; }
+.cal-day{
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:7px; font-size:12px;
+  background:var(--sand); color:var(--ink); border:none; position:relative; transition:all .15s ease;
+}
+.tour-hours{ font-family:var(--font-mono); font-size:12px; color:var(--teal); margin-top:3px; display:flex; align-items:center; gap:5px; }
+.cal-day.out-range{ visibility:hidden; }
+.cal-day.disabled{ background:transparent; color:var(--line); cursor:not-allowed; }
+.cal-day.unavailable{ background:var(--err-bg); color:var(--err); text-decoration:line-through; cursor:not-allowed; }
+.cal-day.available:hover{ background:var(--teal-lt); color:#fff; }
+.cal-day.selected{ background:var(--coral); color:#fff; font-weight:700; box-shadow:0 4px 10px rgba(232,115,74,.4); }
+.cal-day.in-range{ background:rgba(232,115,74,.18); color:var(--ink); border-radius:4px; }
+.cal-day.today::after{ content:""; position:absolute; bottom:4px; width:4px; height:4px; border-radius:50%; background:var(--teal); }
+.cal-legend{ display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:12px; color:var(--ink-soft); }
+.cal-legend span{ display:inline-flex; align-items:center; gap:6px; }
+.legend-dot{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+.cal-side{ width:220px; }
+.selected-date-display{ background:var(--sand); border-radius:var(--radius-m); padding:16px; text-align:center; }
+.selected-date-display .label{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); }
+.selected-date-display .value{ font-family:var(--font-display); font-size:20px; color:var(--deep); margin-top:6px; }
+.selected-date-display .empty{ color:var(--err); font-size:13px; font-weight:600; }
+
+/* ============================================================
+   PEOPLE STEP
+   ============================================================ */
+.contact-toggle-row{
+  display:flex; align-items:center; gap:12px; background:var(--foam); border-radius:var(--radius-m); padding:16px 20px; margin-bottom:24px; box-shadow:var(--shadow-card);
+}
+.checkbox-row{ display:flex; align-items:flex-start; gap:10px; }
+.checkbox-row input[type=checkbox]{ margin-top:2px; width:18px; height:18px; accent-color:var(--coral); flex-shrink:0; }
+.checkbox-row label{ font-size:14px; line-height:1.4; }
+
+.person-card{
+  background:var(--foam); border-radius:var(--radius-l); box-shadow:var(--shadow-card); margin-bottom:22px; overflow:hidden;
+  border:2px solid transparent; transition:border-color .3s ease;
+}
+.person-card.is-complete{ border-color: var(--ok); }
+.person-card.is-invalid{ border-color: var(--err); }
+.person-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 24px; background:rgba(11,61,76,.03); cursor:pointer; }
+.person-head-left{ display:flex; align-items:center; gap:12px; }
+.person-badge{
+  width:32px; height:32px; border-radius:50%; background:var(--deep); color:#fff; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-size:13px; font-weight:600; flex-shrink:0;
+}
+.person-card.is-complete .person-badge{ background: var(--ok); }
+.person-title{ font-family:var(--font-display); font-size:17px; color:var(--deep); }
+.person-status{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+.person-status.ok{ color:var(--ok); }
+.person-status.pending{ color:var(--ink-soft); }
+.person-head-actions{ display:flex; align-items:center; gap:10px; }
+.icon-btn{ background:transparent; border:none; color:var(--ink-soft); font-size:16px; padding:6px; border-radius:6px; }
+.icon-btn:hover{ background:var(--err-bg); color:var(--err); }
+.chevron{ transition: transform .25s ease; color: var(--ink-soft); }
+.person-card.is-collapsed .chevron{ transform: rotate(-90deg); }
+.person-body{ padding:24px; display:grid; gap:18px; }
+.person-card.is-collapsed .person-body{ display:none; }
+
+.field-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; }
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field.span-2{ grid-column: span 2; }
+.field label{ font-size:12.5px; font-weight:600; color:var(--ink-soft); letter-spacing:.01em; }
+.field label .req{ color:var(--coral); }
+.field input[type=text], .field input[type=email], .field input[type=date], .field input[type=number], .field select, .field textarea{
+  border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-s); padding:11px 13px; font-size:14.5px; color:var(--ink);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--teal); box-shadow:0 0 0 3px rgba(28,124,130,.15); outline:none; }
+.field.field-error input, .field.field-error select, .field.field-error textarea{ border-color:var(--err); background:var(--err-bg); animation: shake .4s; }
+.field-error-msg{ font-size:12px; color:var(--err); font-weight:600; }
+.field textarea{ resize:vertical; min-height:64px; }
+.dob-row{ display:grid; grid-template-columns:1fr 1.4fr 1fr; gap:8px; }
+.dob-row select{ border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-s); padding:11px 8px; font-size:14.5px; color:var(--ink); }
+.dob-row select:focus{ border-color:var(--teal); box-shadow:0 0 0 3px rgba(28,124,130,.15); outline:none; }
+
+.welcome-back{
+  background:var(--ok-bg); border:1px solid #bfe0cc; border-radius:var(--radius-s); padding:12px 16px; font-size:13.5px; color:var(--ok);
+  display:flex; align-items:center; gap:10px;
+}
+
+.section-label{ font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--teal); margin-top:6px; padding-top:14px; border-top:1px dashed var(--line); }
+
+.equip-note{ font-size:12.5px; color:var(--ink-soft); background:var(--sand); border-radius:var(--radius-s); padding:12px 14px; line-height:1.5; }
+.equip-item{ border:1.5px solid var(--line); border-radius:var(--radius-m); padding:14px 16px; }
+.equip-item.checked{ border-color:var(--teal); background:rgba(28,124,130,.05); }
+.equip-item-head{ display:flex; align-items:center; gap:10px; }
+.equip-item-head input{ width:17px; height:17px; accent-color:var(--teal); }
+.equip-item-head label{ font-weight:600; font-size:14px; flex:1; }
+.equip-item-body{ margin-top:12px; display:none; gap:12px; }
+.equip-item.checked .equip-item-body{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+.own-regulator-row{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:13px; color:var(--ink-soft); }
+.fin-equiv-table{ font-family:var(--font-mono); font-size:11.5px; color:var(--ink-soft); background:#fff; border-radius:var(--radius-s); padding:10px 12px; margin-top:8px; line-height:1.7; border:1px solid var(--line); }
+.know-size-toggle{ display:flex; gap:10px; margin-bottom:6px; }
+.know-size-toggle label{ display:flex; align-items:center; gap:6px; font-size:13.5px; font-weight:500; background:#fff; border:1.5px solid var(--line); padding:8px 14px; border-radius:999px; }
+.know-size-toggle input{ accent-color:var(--teal); }
+
+.add-person-btn{
+  width:100%; border:2px dashed var(--teal); background:rgba(28,124,130,.05); color:var(--teal); border-radius:var(--radius-l); padding:16px; font-weight:700; font-size:14.5px;
+}
+.add-person-btn:hover{ background:rgba(28,124,130,.1); }
+
+/* ============================================================
+   REVIEW STEP
+   ============================================================ */
+.assign-block{ background:var(--foam); border-radius:var(--radius-l); box-shadow:var(--shadow-card); padding:22px 24px; margin-bottom:18px; }
+.assign-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.assign-clients{ display:flex; flex-wrap:wrap; gap:10px; }
+.client-pill{
+  display:flex; align-items:center; gap:8px; background:var(--sand); border-radius:999px; padding:8px 14px 8px 10px; font-size:13.5px; border:1.5px solid transparent;
+}
+.client-pill.active{ border-color:var(--teal); background:rgba(28,124,130,.08); }
+.client-pill input{ accent-color:var(--teal); width:16px; height:16px; }
+
+.legal-sheet{
+  background:#fff; width:100%; max-width:850px; margin:0 auto; box-shadow:var(--shadow-pop); border-radius:4px; overflow:hidden;
+  font-family:var(--font-body);
+}
+.legal-sheet-scroll{ /* sized naturally to its content — no fixed height or scrollbar */ }
+.legal-head{ background:linear-gradient(120deg,var(--deep),var(--deep-2)); color:#fff; padding:34px 40px; }
+.legal-head .lg-brand{ font-family:var(--font-display); font-size:24px; }
+.legal-head .lg-status{ font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; background:var(--warn-bg); color:var(--warn); display:inline-block; padding:5px 12px; border-radius:999px; margin-top:10px; }
+.legal-body{ padding:32px 40px; }
+.lg-section{ margin-bottom:26px; }
+.lg-section-title{ font-family:var(--font-mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--teal); border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:12px; }
+.lg-row{ display:flex; justify-content:space-between; font-size:13.5px; padding:5px 0; border-bottom:1px dotted #eee; }
+.lg-row .k{ color:var(--ink-soft); }
+.lg-row .v{ font-weight:600; text-align:right; }
+.lg-activity-card{ border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:12px; }
+.lg-activity-card h4{ font-size:15px; color:var(--deep); margin-bottom:6px; }
+.lg-total-row{ display:flex; justify-content:space-between; font-size:20px; font-family:var(--font-display); color:var(--deep); padding-top:14px; border-top:2px solid var(--deep); margin-top:8px; }
+.modify-link{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--coral); background:none; border:1px solid var(--coral); border-radius:999px; padding:4px 10px; }
+
+/* ============================================================
+   DONE STEP
+   ============================================================ */
+.done-wrap{ text-align:center; padding:60px 20px; max-width:560px; margin:0 auto; }
+.done-icon{ width:88px; height:88px; margin:0 auto 24px; }
+.booking-code{ font-family:var(--font-mono); font-size:15px; background:var(--foam); display:inline-block; padding:10px 20px; border-radius:999px; margin-top:12px; box-shadow:var(--shadow-card); letter-spacing:.06em; }
+
+/* Toast */
+.toast{ position:fixed; top:90px; right:24px; background:var(--deep); color:#fff; padding:14px 20px; border-radius:var(--radius-s); box-shadow:var(--shadow-pop); z-index:200; font-size:14px; max-width:320px; animation: toastIn .3s ease; }
+@keyframes toastIn{ from{opacity:0; transform:translateX(20px);} to{opacity:1; transform:translateX(0);} }
+
+/* Modal */
+.modal-backdrop{ position:fixed; inset:0; background:rgba(8,32,40,.55); z-index:150; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal-box{ background:#fff; border-radius:var(--radius-l); max-width:700px; width:100%; max-height:88vh; overflow-y:auto; padding:30px; box-shadow:var(--shadow-pop); position:relative; }
+.modal-close-float{ position:absolute; top:14px; right:14px; z-index:5; background:rgba(255,255,255,.92); border-radius:50%; width:34px; height:34px; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+.modal-close-float:hover{ background:#fff; }
+
+@media (max-width: 720px){
+  .tide-step-label{ font-size:9.5px; }
+  .field.span-2{ grid-column: span 1; }
+  .cal-wrap{ flex-direction:column; }
+  .cal-side{ width:100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="container">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="19" stroke="#2E9AA0" stroke-width="1.5"/>
+        <path d="M4 22c4-4 8 4 12 0s8-4 12 0 8 4 8 4" stroke="#E8734A" stroke-width="2" stroke-linecap="round"/>
+        <path d="M4 27c4-4 8 4 12 0s8-4 12 0 8 4 8 4" stroke="#FBFAF7" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+      </svg>
+      <div>
+        <div class="brand-name" tr="Hidrosfera">Hidrosfera</div>
+        <div class="brand-tag" tr="Baja California Sur">Baja California Sur</div>
+      </div>
+    </div>
+    <div class="masthead-right">
+      <div class="lang-switch" id="langSwitch"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tideband">
+  <div class="tideband-inner">
+    <svg class="tide-svg" viewBox="0 0 1000 34" preserveAspectRatio="none" id="tideSvg">
+      <path id="tideChannel" d="M0,20 Q 62.5,8 125,20 T 250,20 T 375,20 T 500,20 T 625,20 T 750,20 T 875,20 T 1000,20" fill="none" stroke="#D9CEB8" stroke-width="4" stroke-linecap="round"/>
+      <path id="tideFill" d="M0,20 Q 62.5,8 125,20 T 250,20 T 375,20 T 500,20 T 625,20 T 750,20 T 875,20 T 1000,20" fill="none" stroke="#1C7C82" stroke-width="4" stroke-linecap="round"/>
+      <g id="tideBoat" transform="translate(0,20)">
+        <text x="0" y="6" text-anchor="middle" font-size="16">🐬</text>
+      </g>
+    </svg>
+    <div class="tide-steps" id="tideSteps"></div>
+  </div>
+</div>
+
+<main id="app"></main>
+
+<div class="selection-bar" id="selectionBar">
+  <div class="selection-bar-inner">
+    <button class="btn btn-ghost btn-sm hidden" id="barBackBtn" tr="← Back">← Back</button>
+    <div class="selection-list" id="selectionList"></div>
+    <div style="display:flex; align-items:center; gap:18px;">
+      <span class="selection-total" id="selectionTotal" tr=""></span>
+      <button class="btn btn-primary" id="bookBtn" tr="Book these experiences">Book these experiences →</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastHost"></div>
+<div id="modalHost"></div>
+
+<datalist id="countryList">
+  <option value="Afghanistan"></option><option value="Albania"></option><option value="Algeria"></option>
+  <option value="Andorra"></option><option value="Angola"></option><option value="Argentina"></option>
+  <option value="Armenia"></option><option value="Australia"></option><option value="Austria"></option>
+  <option value="Azerbaijan"></option><option value="Bahamas"></option><option value="Bahrain"></option>
+  <option value="Bangladesh"></option><option value="Barbados"></option><option value="Belarus"></option>
+  <option value="Belgium"></option><option value="Belize"></option><option value="Benin"></option>
+  <option value="Bhutan"></option><option value="Bolivia"></option><option value="Bosnia and Herzegovina"></option>
+  <option value="Botswana"></option><option value="Brazil"></option><option value="Brunei"></option>
+  <option value="Bulgaria"></option><option value="Burkina Faso"></option><option value="Burundi"></option>
+  <option value="Cambodia"></option><option value="Cameroon"></option><option value="Canada"></option>
+  <option value="Cape Verde"></option><option value="Central African Republic"></option><option value="Chad"></option>
+  <option value="Chile"></option><option value="China"></option><option value="Colombia"></option>
+  <option value="Comoros"></option><option value="Costa Rica"></option><option value="Croatia"></option>
+  <option value="Cuba"></option><option value="Cyprus"></option><option value="Czech Republic"></option>
+  <option value="Democratic Republic of the Congo"></option><option value="Denmark"></option><option value="Djibouti"></option>
+  <option value="Dominica"></option><option value="Dominican Republic"></option><option value="Ecuador"></option>
+  <option value="Egypt"></option><option value="El Salvador"></option><option value="Equatorial Guinea"></option>
+  <option value="Eritrea"></option><option value="Estonia"></option><option value="Eswatini"></option>
+  <option value="Ethiopia"></option><option value="Fiji"></option><option value="Finland"></option>
+  <option value="France"></option><option value="Gabon"></option><option value="Gambia"></option>
+  <option value="Georgia"></option><option value="Germany"></option><option value="Ghana"></option>
+  <option value="Greece"></option><option value="Grenada"></option><option value="Guatemala"></option>
+  <option value="Guinea"></option><option value="Guinea-Bissau"></option><option value="Guyana"></option>
+  <option value="Haiti"></option><option value="Honduras"></option><option value="Hungary"></option>
+  <option value="Iceland"></option><option value="India"></option><option value="Indonesia"></option>
+  <option value="Iran"></option><option value="Iraq"></option><option value="Ireland"></option>
+  <option value="Israel"></option><option value="Italy"></option><option value="Ivory Coast"></option>
+  <option value="Jamaica"></option><option value="Japan"></option><option value="Jordan"></option>
+  <option value="Kazakhstan"></option><option value="Kenya"></option><option value="Kiribati"></option>
+  <option value="Kosovo"></option><option value="Kuwait"></option><option value="Kyrgyzstan"></option>
+  <option value="Laos"></option><option value="Latvia"></option><option value="Lebanon"></option>
+  <option value="Lesotho"></option><option value="Liberia"></option><option value="Libya"></option>
+  <option value="Liechtenstein"></option><option value="Lithuania"></option><option value="Luxembourg"></option>
+  <option value="Madagascar"></option><option value="Malawi"></option><option value="Malaysia"></option>
+  <option value="Maldives"></option><option value="Mali"></option><option value="Malta"></option>
+  <option value="Marshall Islands"></option><option value="Mauritania"></option><option value="Mauritius"></option>
+  <option value="Mexico"></option><option value="Micronesia"></option><option value="Moldova"></option>
+  <option value="Monaco"></option><option value="Mongolia"></option><option value="Montenegro"></option>
+  <option value="Morocco"></option><option value="Mozambique"></option><option value="Myanmar"></option>
+  <option value="Namibia"></option><option value="Nauru"></option><option value="Nepal"></option>
+  <option value="Netherlands"></option><option value="New Zealand"></option><option value="Nicaragua"></option>
+  <option value="Niger"></option><option value="Nigeria"></option><option value="North Korea"></option>
+  <option value="North Macedonia"></option><option value="Norway"></option><option value="Oman"></option>
+  <option value="Pakistan"></option><option value="Palau"></option><option value="Panama"></option>
+  <option value="Papua New Guinea"></option><option value="Paraguay"></option><option value="Peru"></option>
+  <option value="Philippines"></option><option value="Poland"></option><option value="Portugal"></option>
+  <option value="Qatar"></option><option value="Republic of the Congo"></option><option value="Romania"></option>
+  <option value="Russia"></option><option value="Rwanda"></option><option value="Saint Lucia"></option>
+  <option value="Samoa"></option><option value="San Marino"></option><option value="Saudi Arabia"></option>
+  <option value="Senegal"></option><option value="Serbia"></option><option value="Seychelles"></option>
+  <option value="Sierra Leone"></option><option value="Singapore"></option><option value="Slovakia"></option>
+  <option value="Slovenia"></option><option value="Solomon Islands"></option><option value="Somalia"></option>
+  <option value="South Africa"></option><option value="South Korea"></option><option value="South Sudan"></option>
+  <option value="Spain"></option><option value="Sri Lanka"></option><option value="Sudan"></option>
+  <option value="Suriname"></option><option value="Sweden"></option><option value="Switzerland"></option>
+  <option value="Syria"></option><option value="Taiwan"></option><option value="Tajikistan"></option>
+  <option value="Tanzania"></option><option value="Thailand"></option><option value="Timor-Leste"></option>
+  <option value="Togo"></option><option value="Tonga"></option><option value="Trinidad and Tobago"></option>
+  <option value="Tunisia"></option><option value="Turkey"></option><option value="Turkmenistan"></option>
+  <option value="Tuvalu"></option><option value="Uganda"></option><option value="Ukraine"></option>
+  <option value="United Arab Emirates"></option><option value="United Kingdom"></option><option value="United States"></option>
+  <option value="Uruguay"></option><option value="Uzbekistan"></option><option value="Vanuatu"></option>
+  <option value="Vatican City"></option><option value="Venezuela"></option><option value="Vietnam"></option>
+  <option value="Yemen"></option><option value="Zambia"></option><option value="Zimbabwe"></option>
+</datalist>
+
+<script>
+/* ---------------------------------------------------------------------
+   HOST COMPATIBILITY SHIM
+   window.storage is provided automatically inside Claude.ai's artifact
+   sandbox. Once these files are hosted on a normal web server, that API
+   doesn't exist — so this shim recreates the same interface using the
+   browser's own localStorage whenever window.storage isn't already
+   present. Same app code runs unmodified in both places.
+
+   IMPORTANT LIMITATION: localStorage lives only in one visitor's own
+   browser. It is NOT a shared database — two different customers (or
+   the same customer on a different device) will not see each other's
+   bookings, and the admin panel will only show bookings made in the
+   same browser. This is fine for a solo demo/test of the interface,
+   but a real launch needs a real backend + database (see the notes
+   near the bottom of this file's script for what that involves).
+   --------------------------------------------------------------------- */
+if(!window.storage){
+  window.storage = (function(){
+    const PREFIX = 'hidrosfera_store::';
+    const keyFor = (key, shared) => PREFIX + (shared ? 'shared::' : 'private::') + key;
+    return {
+      async get(key, shared){
+        const raw = localStorage.getItem(keyFor(key, shared));
+        if(raw === null) throw new Error('Key not found: ' + key);
+        return { key, value: raw, shared: !!shared };
+      },
+      async set(key, value, shared){
+        localStorage.setItem(keyFor(key, shared), value);
+        return { key, value, shared: !!shared };
+      },
+      async delete(key, shared){
+        localStorage.removeItem(keyFor(key, shared));
+        return { key, deleted: true, shared: !!shared };
+      },
+      async list(prefix, shared){
+        const full = keyFor(prefix || '', shared);
+        const base = keyFor('', shared);
+        const keys = [];
+        for(let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          if(k && k.startsWith(full)) keys.push(k.slice(base.length));
+        }
+        return { keys, prefix, shared: !!shared };
+      }
+    };
+  })();
+}
+</script>
+<script>
+/* =====================================================================
+   HIDROSFERA BOOKING APP
+   Single-file front-end prototype. Persists via window.storage (Claude
+   artifact key/value store). See bottom of file for integration notes
+   on real email + backend, left as clearly marked TODOs.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   STORAGE KEYS
+   'activities' and 'availability' are SHARED — because in the real
+   product the admin panel (phase 2) edits them and every visitor must
+   see the same catalog / calendar. 'clients' and 'bookings' are also
+   shared, functioning as the (mock) database until a real backend
+   exists. Nothing here is per-user private data.
+   --------------------------------------------------------------------- */
+const SK = {
+  activities:   'hidrosfera:activities',
+  availability: 'hidrosfera:availability',
+  clients:      'hidrosfera:clients',
+  bookings:     'hidrosfera:bookings',
+  settings:     'hidrosfera:settings'   // admin notification email, etc. (phase 2)
+};
+
+async function storeGet(key, shared){
+  try{ const r = await window.storage.get(key, !!shared); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function storeSet(key, value, shared){
+  try{ await window.storage.set(key, JSON.stringify(value), !!shared); return true; }
+  catch(e){ console.error('storage set failed', key, e); return false; }
+}
+
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const MAX_DATE = new Date(TODAY); MAX_DATE.setMonth(MAX_DATE.getMonth() + 30); // 2.5 years
+
+function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function parseDate(s){ const [y,m,day] = s.split('-').map(Number); return new Date(y, m-1, day); }
+function fmtDateHuman(s){
+  if(!s) return '';
+  const d = parseDate(s);
+  return d.toLocaleDateString('en-US', {weekday:'short', year:'numeric', month:'short', day:'numeric'});
+}
+function fmtMoney(n){ return 'MX$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function escapeAttr(s){ return String(s).replace(/"/g,'&quot;'); }
+function todayISO(){ return fmtDate(TODAY); }
+
+/* ---------------------------------------------------------------------
+   SEED DATA — this is what an admin panel (phase 2) would let you add
+   to / edit. Each activity carries a `discount` field already, ready
+   for the "give discounts on the main experience page" admin feature.
+   --------------------------------------------------------------------- */
+const SEED_ACTIVITIES = [
+  { id:'act_whaleshark', name:'Whale Shark Snorkel', category:'Snorkeling', icon:'🐋', image:null,
+    shortDesc:'Swim alongside gentle whale sharks in the plankton-rich waters off La Paz Bay.',
+    longDesc:'Whale sharks gather in La Paz Bay to feed on plankton blooms, and this trip puts you in the water alongside them with a certified guide. Boats keep a respectful distance and guides brief every group on the interaction rules before anyone enters the water.',
+    durationLabel:'4 hrs · morning', hours:'Departs 8:00 AM · Returns 12:00 PM', price:2450, active:true, discount:null,
+    highlights:['Small groups, one guide per boat','Snorkel gear included','Marine-park entry fee included'],
+    included:['Round-trip boat transfer','Snorkel mask, fins & vest','Bottled water & light snack','Bilingual marine guide'],
+    bring:['Reef-safe sunscreen','Swimsuit & towel','Change of clothes'],
+    meetingPoint:'Malecón de La Paz, dock 2 — 20 minutes before departure.' },
+  { id:'act_sealions', name:'Sea Lion Colony Snorkel', category:'Snorkeling', icon:'🦭', image:null,
+    shortDesc:'Snorkel with a playful sea lion colony at Los Islotes, part of a protected marine park.',
+    longDesc:'Los Islotes is home to one of the most accessible sea lion colonies in the world. Juveniles are famously curious and will often swim circles around snorkelers. The site also offers reef fish, rays and the occasional sea turtle.',
+    durationLabel:'5 hrs · full morning', hours:'Departs 7:30 AM · Returns 12:30 PM', price:2100, active:true, discount:{type:'percent', value:10},
+    highlights:['Two snorkel stops','Protected national marine park','Great for confident swimmers'],
+    included:['Round-trip boat transfer','Snorkel gear','Water & snacks','Marine park fee'],
+    bring:['Reef-safe sunscreen','Rash guard recommended'],
+    meetingPoint:'Marina Cortez, La Paz — 20 minutes before departure.' },
+  { id:'act_pulmodive', name:'Two-Tank Reef Dive — Cabo Pulmo', category:'Diving', icon:'🤿', image:null,
+    shortDesc:'Two-tank certified dive on the living coral reef of Cabo Pulmo National Park.',
+    longDesc:'Cabo Pulmo protects one of the oldest living reefs in the Gulf of California. Expect big schools of fish, healthy coral structure and the chance of bull sharks in season. Certification card required.',
+    durationLabel:'6 hrs · full day', hours:'Departs 7:00 AM · Returns 2:00 PM', price:3600, active:true, discount:null,
+    highlights:['Two guided tank dives','Max 4 divers per guide','Surface interval with snacks'],
+    included:['Tanks & weights','Dive guide','Park fee','Lunch'],
+    bring:['Certification card','Own dive computer if you have one','Towel & change of clothes'],
+    meetingPoint:'Cabo Pulmo dive shop — arrive 30 minutes early for gear check.' },
+  { id:'act_kayaksunset', name:'Sunset Kayak & Bioluminescence', category:'Kayaking', icon:'🛶', image:null,
+    shortDesc:'Paddle a calm bay at sunset, then watch the water glow with bioluminescent plankton.',
+    longDesc:'A gentle paddle through a sheltered bay timed to catch the sunset, followed by bioluminescent plankton lighting up in the wake of your kayak once it is fully dark. No experience needed.',
+    durationLabel:'3 hrs · evening', hours:'Departs 6:00 PM · Returns 9:00 PM', price:1350, active:true, discount:null,
+    highlights:['Beginner-friendly','Bioluminescence viewing (seasonal)','Small group, single or tandem kayaks'],
+    included:['Kayak & paddle','Headlamp','Guide'],
+    bring:['Light jacket for the evening breeze','Closed-toe water shoes'],
+    meetingPoint:'Playa El Tecolote — 15 minutes before departure.' },
+  { id:'act_fishing', name:'Sport Fishing — Dorado & Marlin', category:'Fishing', icon:'🎣', image:null,
+    shortDesc:'Half-day offshore sport fishing charter chasing dorado, marlin and yellowfin tuna.',
+    longDesc:'A half-day offshore charter aboard a well-equipped panga or cruiser, targeting whatever is running that season — dorado, striped marlin, yellowfin and more. Captain and mate included.',
+    durationLabel:'6 hrs · half day', hours:'Departs 6:30 AM · Returns 12:30 PM', price:5200, active:true, discount:null,
+    highlights:['Licensed captain & mate','Tackle included','Catch-and-release or keep for grilling'],
+    included:['Rods, reels & bait','Fishing license','Water & ice'],
+    bring:['Sunscreen & hat','Motion sickness medication if prone'],
+    meetingPoint:'Marina Cabo San Lucas, slip to be confirmed.' },
+  { id:'act_bluewhale', name:'Blue Whale Watching — Loreto', category:'Whale Watching', icon:'🐳', image:null,
+    shortDesc:'Seasonal encounters with the largest animal on Earth in the calm waters of Loreto Bay.',
+    longDesc:'Loreto Bay is a seasonal feeding ground for blue whales, the largest animal to have ever lived. Boats follow strict distance guidelines set by marine authorities while still offering close, memorable sightings.',
+    durationLabel:'4 hrs · morning', hours:'Departs 8:30 AM · Returns 12:30 PM', price:2800, active:true, discount:null,
+    highlights:['Seasonal (Jan–Apr)','Marine-mammal permitted operator','Small group boats'],
+    included:['Boat transfer','Snacks & water','Naturalist guide'],
+    bring:['Warm layer for the open water','Camera with zoom if you have one'],
+    meetingPoint:'Loreto public pier — 20 minutes before departure.' },
+  { id:'act_discoverscuba', name:'Discover Scuba Diving (Beginner)', category:'Diving', icon:'🫧', image:null,
+    shortDesc:'No certification needed — a guided introductory dive for first-timers, pool + ocean.',
+    longDesc:'A confined-water briefing followed by a shallow, guided ocean dive — designed for people who have never dived before and want to try it without committing to a full certification course.',
+    durationLabel:'4 hrs · morning', hours:'Departs 9:00 AM · Returns 1:00 PM', price:2200, active:true, discount:null,
+    highlights:['No certification required','1-on-1 or small group with instructor','Shallow, sheltered dive site'],
+    included:['All gear','Instructor','Pool + ocean session'],
+    bring:['Swimsuit & towel','Comfortable clothes for after'],
+    meetingPoint:'Hidrosfera dive center — 30 minutes before start.' },
+  { id:'act_mobula', name:'Snorkel with Mobula Rays', category:'Snorkeling', icon:'🐟', image:null,
+    shortDesc:'Snorkel among migrating schools of mobula rays as they leap and glide near the surface.',
+    longDesc:'During migration season, mobula rays gather in huge schools near the surface — sometimes leaping clear of the water. This trip gets you in the water alongside them for a genuinely rare wildlife encounter.',
+    durationLabel:'3.5 hrs · morning', hours:'Departs 8:00 AM · Returns 11:30 AM', price:1950, active:true, discount:{type:'amount', value:200},
+    highlights:['Seasonal migration event','Fast-paced, active snorkel','Guide-spotted schools'],
+    included:['Boat transfer','Snorkel gear','Water'],
+    bring:['Reef-safe sunscreen','Good swimming ability recommended'],
+    meetingPoint:'Marina Cortez, La Paz — 20 minutes before departure.' },
+];
+
+function seedAvailability(){
+  // A few mock blocked dates per activity so the calendar has something
+  // to demonstrate. In the real product, phase-2 admin panel writes here.
+  const av = {};
+  SEED_ACTIVITIES.forEach((a,i)=>{
+    const blocked = [];
+    for(let w=1; w<=10; w++){
+      const d = new Date(TODAY); d.setDate(d.getDate() + w*7 + i); // sprinkle blocked days
+      blocked.push(fmtDate(d));
+    }
+    av[a.id] = blocked;
+  });
+  return av;
+}
+
+async function loadCatalog(){
+  let activities = await storeGet(SK.activities, true);
+  if(!activities){ activities = SEED_ACTIVITIES; await storeSet(SK.activities, activities, true); }
+  let availability = await storeGet(SK.availability, true);
+  if(!availability){ availability = seedAvailability(); await storeSet(SK.availability, availability, true); }
+  let settings = await storeGet(SK.settings, true);
+  if(!settings){ settings = { notifyEmail:'reservations@hidrosfera.mx' }; await storeSet(SK.settings, settings, true); }
+  return { activities, availability, settings };
+}
+
+/* ---------------------------------------------------------------------
+   FIN SIZE EQUIVALENCE (approximate — booking convenience only; staff
+   confirms exact fit on-site). Split by gender per the spec.
+   --------------------------------------------------------------------- */
+const FIN_CHART = {
+  Male: [
+    ['XXS','38','24.0','6'], ['XS','39','25.0','7'], ['S','40–41','25.5–26.0','7.5–8'],
+    ['M','42–43','27.0–27.5','9–9.5'], ['L','44–45','28.5–29.0','10.5–11'],
+    ['XL','46–47','30.0–30.5','12–12.5'], ['XXL','48','31.0','13']
+  ],
+  Female: [
+    ['XXS','35','22.5','4.5'], ['XS','36','23.5','5.5'], ['S','37','24.5','6.5'],
+    ['M','38','25.5','7.5'], ['L','39','26.5','8.5'],
+    ['XL','40','27.5','9.5'], ['XXL','41','28.5','10.5']
+  ]
+};
+
+/* ---------------------------------------------------------------------
+   GLOBAL STATE
+   --------------------------------------------------------------------- */
+const STEPS = [
+  { key:'experiences', label:'Experiences' },
+  { key:'dates',       label:'Dates' },
+  { key:'people',      label:'People' },
+  { key:'review',      label:'Review' },
+  { key:'done',         label:'Done' },
+];
+
+const state = {
+  step: 0,
+  pageLanguage: 'en',
+  activities: [],
+  availability: {},
+  settings: {},
+  selectedActivityIds: [],   // step 1: multi-select on the grid
+  bookingActivities: [],     // after "Book" clicked: [{activityId, date}]
+  sameAsFirst: true,
+  mainContact: emptyPerson(true),
+  people: [ emptyPerson(false) ],
+  clientAssignments: {},     // activityId -> [personId,...]
+  collapsed: {},             // personId -> bool
+  calCursor: {},             // activityId -> {y,m} currently displayed month
+  calPending: {},            // activityId -> [] clicked dates (max 2) driving the range logic
+  bookingCode: null,
+  furthestStepReached: 0,
+};
+
+function emptyPerson(contactOnly){
+  const p = {
+    id: uid('p'),
+    fullName:'', gender:'', nationality:'', dob:'', dobDay:'', dobMonth:'', dobYear:'', allergies:'', email:'', language: 'en', notes:'',
+  };
+  if(!contactOnly){
+    p.needsRental = null; // null = unanswered yes/no
+    p.knowSizes = true;
+    p.height = ''; p.heightUnit = 'cm';
+    p.weight = ''; p.weightUnit = 'kg';
+    p.ownRegulatorBrought = false;
+    p.ownRegulatorIsDIN = false;
+    p.items = {
+      bcd:      { checked:false, size:'' },
+      wetsuit:  { checked:false, size:'' },
+      mask:     { checked:false },
+      regulator:{ checked:false },
+      computer: { checked:false },
+      fins:     { checked:false, size:'' },
+    };
+    p._welcomeBack = null; // {date} when a returning client is matched
+  }
+  return p;
+}
+
+/* ---------------------------------------------------------------------
+   TOAST / MODAL HELPERS
+   --------------------------------------------------------------------- */
+function showToast(msg){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 300); }, 3200);
+}
+function showModal(innerHtml){
+  const host = document.getElementById('modalHost');
+  host.innerHTML = `<div class="modal-backdrop" id="modalBackdrop"><div class="modal-box">${innerHtml}</div></div>`;
+  document.getElementById('modalBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='modalBackdrop') closeModal(); });
+}
+function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
+
+/* ---------------------------------------------------------------------
+   TIDE-LINE STEP TRACKER (signature element)
+   Renders a wavy channel; the portion up to the current step is
+   "filled" with water color, and a boat marker sits at the current
+   step's x position. Labels update state/current/done classes.
+   --------------------------------------------------------------------- */
+function renderTideTracker(){
+  const stepsWrap = document.getElementById('tideSteps');
+  stepsWrap.innerHTML = STEPS.map((s,i)=>{
+    const cls = i === state.step ? 'is-current' : (i < state.step ? 'is-done' : '');
+    return `<div class="tide-step ${cls}" data-step-index="${i}">
+              <div class="tide-step-num">0${i+1}</div>
+              <div class="tide-step-label" tr="${s.label}">${s.label}</div>
+            </div>`;
+  }).join('');
+
+  // Position the boat + fill along the wave path proportionally to progress.
+  const path = document.getElementById('tideChannel');
+  const fill = document.getElementById('tideFill');
+  const boat = document.getElementById('tideBoat');
+  const total = path.getTotalLength();
+  const frac = STEPS.length <= 1 ? 1 : state.step / (STEPS.length - 1);
+  const len = total * frac;
+  fill.setAttribute('stroke-dasharray', `${len} ${total}`);
+  const pt = path.getPointAtLength(len);
+  boat.setAttribute('transform', `translate(${pt.x - 8}, ${pt.y - 14})`);
+
+  // Allow clicking an already-completed step to jump back.
+  stepsWrap.querySelectorAll('.tide-step').forEach(el=>{
+    el.style.cursor = 'default';
+    const idx = Number(el.dataset.stepIndex);
+    if(idx < state.step && idx <= state.furthestStepReached){
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', ()=> goToStep(idx));
+    }
+  });
+}
+
+function goToStep(idx){
+  state.step = idx;
+  window.scrollTo({top:0, behavior:'smooth'});
+  render();
+}
+
+function nextStep(){
+  if(!validateCurrentStep()) return;
+  state.step = Math.min(state.step + 1, STEPS.length - 1);
+  state.furthestStepReached = Math.max(state.furthestStepReached, state.step);
+  window.scrollTo({top:0, behavior:'smooth'});
+  render();
+}
+function prevStep(){
+  state.step = Math.max(state.step - 1, 0);
+  window.scrollTo({top:0, behavior:'smooth'});
+  render();
+}
+
+/* ---------------------------------------------------------------------
+   MAIN RENDER DISPATCH
+   --------------------------------------------------------------------- */
+function render(){
+  renderTideTracker();
+  renderLangSwitch();
+  const app = document.getElementById('app');
+  const renderers = [renderExperiencesStep, renderDatesStep, renderPeopleStep, renderReviewStep, renderDoneStep];
+  app.innerHTML = renderers[state.step]();
+  attachStepHandlers();
+  renderSelectionBar();
+  saveDraft();
+}
+
+function renderLangSwitch(){
+  const el = document.getElementById('langSwitch');
+  el.innerHTML = `
+    <button data-lang="en" class="${state.pageLanguage==='en'?'active':''}" tr="EN">EN</button>
+    <button data-lang="es" class="${state.pageLanguage==='es'?'active':''}" tr="ES">ES</button>`;
+  el.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>{
+    state.pageLanguage = b.dataset.lang;
+    if(state.sameAsFirst) state.mainContact.language = state.pageLanguage;
+    render();
+  }));
+}
+
+async function saveDraft(){
+  // Personal (not shared) draft so a reload doesn't lose progress.
+  await storeSet('hidrosfera:draft', {
+    step: state.step, pageLanguage: state.pageLanguage,
+    selectedActivityIds: state.selectedActivityIds, bookingActivities: state.bookingActivities,
+    sameAsFirst: state.sameAsFirst, mainContact: state.mainContact, people: state.people,
+    clientAssignments: state.clientAssignments, furthestStepReached: state.furthestStepReached
+  }, false);
+}
+
+/* =======================================================================
+   STEP 1 — EXPERIENCES
+   ======================================================================= */
+function activityById(id){ return state.activities.find(a=>a.id===id); }
+function priceAfterDiscount(a){
+  if(!a.discount) return a.price;
+  if(a.discount.type==='percent') return Math.round(a.price * (1 - a.discount.value/100));
+  return Math.max(0, a.price - a.discount.value);
+}
+
+function renderExperiencesStep(){
+  const cards = state.activities.filter(a=>a.active).map(a=>{
+    const selected = state.selectedActivityIds.includes(a.id);
+    const finalPrice = priceAfterDiscount(a);
+    const hasDiscount = !!a.discount;
+    const mediaStyle = a.image
+      ? `background-image:url('${escapeAttr(a.image)}'); background-size:cover; background-position:center;`
+      : `background: linear-gradient(135deg, var(--deep), var(--teal));`;
+    return `
+    <div class="activity-card ${selected?'is-selected':''}" data-activity-id="${a.id}">
+      <div class="activity-media" style="${mediaStyle} cursor:pointer;" data-select-activity="${a.id}" title="Select this experience">
+        <span class="activity-category" tr="${escapeAttr(a.category)}">${a.category}</span>
+        ${!a.image ? `<span class="activity-media-icon">${a.icon}</span>` : ''}
+      </div>
+      <div class="activity-body">
+        <div class="activity-name" tr="${escapeAttr(a.name)}">${a.name}</div>
+        <div class="activity-desc" tr="${escapeAttr(a.shortDesc)}">${a.shortDesc}</div>
+        <div class="activity-meta">
+          <span tr="${escapeAttr(a.durationLabel)}">⏱ ${a.durationLabel}</span>
+        </div>
+        <div class="activity-links">
+          <button type="button" data-more-info="${a.id}" tr="More information">More information</button>
+          <a href="experience-detail-template.html?activity=${encodeURIComponent(a.id)}" target="_blank" rel="noopener" data-full-details="${a.id}" tr="Full details ↗">Full details ↗</a>
+        </div>
+        <div class="activity-price-row">
+          <div class="activity-price">
+            ${hasDiscount ? `<span class="strike">${fmtMoney(a.price)}</span>` : ''}
+            ${fmtMoney(finalPrice)} <small tr="per person">/ person</small>
+            ${hasDiscount ? `<div class="discount-pill" tr="${a.discount.type==='percent' ? a.discount.value+'% OFF' : fmtMoney(a.discount.value)+' OFF'}">${a.discount.type==='percent' ? a.discount.value+'% OFF' : fmtMoney(a.discount.value)+' OFF'}</div>` : ''}
+          </div>
+          <button class="select-toggle" data-select-activity="${a.id}" tr="${selected?'Selected':'Select'}">
+            ${selected ? '✓ Selected' : '+ Select'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="step-panel">
+    <div class="container">
+      <span class="eyebrow" tr="Step 1 of 5">Step 1 of 5</span>
+      <h1 class="step-title" tr="Choose your experiences">Choose your experiences</h1>
+      <p class="step-sub" tr="Select one or more ocean experiences in Baja California Sur. You can book several at once — we'll ask for a date for each.">Select one or more ocean experiences in Baja California Sur. You can book several at once — we'll ask for a date for each.</p>
+      <div class="activities-grid">${cards}</div>
+    </div>
+  </div>`;
+}
+
+function showMoreInfoModal(activityId){
+  const a = activityById(activityId);
+  if(!a) return;
+  const list = (arr)=> (arr||[]).map(x=>`<li tr="${escapeAttr(x)}">${x}</li>`).join('');
+  showModal(`
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px;">
+      <div>
+        <span class="activity-category" style="position:static; display:inline-block;" tr="${escapeAttr(a.category)}">${a.category}</span>
+        <h3 style="margin-top:10px;" tr="${escapeAttr(a.name)}">${a.icon} ${a.name}</h3>
+      </div>
+      <button class="icon-btn" onclick="closeModal()" tr="✕">✕</button>
+    </div>
+    <p style="font-size:14px; color:var(--ink-soft); line-height:1.6;" tr="${escapeAttr(a.longDesc||a.shortDesc)}">${a.longDesc||a.shortDesc}</p>
+    <div class="tour-hours" tr="${escapeAttr(a.hours||a.durationLabel)}">🕒 ${a.hours||a.durationLabel}</div>
+    ${a.highlights && a.highlights.length ? `<div class="info-block-title" tr="Highlights">Highlights</div><ul class="info-list">${list(a.highlights)}</ul>` : ''}
+    ${a.included && a.included.length ? `<div class="info-block-title" tr="What's included">What's included</div><ul class="info-list">${list(a.included)}</ul>` : ''}
+    ${a.bring && a.bring.length ? `<div class="info-block-title" tr="What to bring">What to bring</div><ul class="info-list">${list(a.bring)}</ul>` : ''}
+    ${a.meetingPoint ? `<div class="info-block-title" tr="Meeting point">Meeting point</div><p style="font-size:13.5px; color:var(--ink-soft);" tr="${escapeAttr(a.meetingPoint)}">${a.meetingPoint}</p>` : ''}
+    <div style="margin-top:20px; display:flex; gap:10px;">
+      <button class="btn btn-primary btn-sm" data-select-activity="${a.id}" onclick="closeModal()" tr="Select this experience">Select this experience</button>
+      <a class="btn btn-outline btn-sm" href="experience-detail-template.html?activity=${encodeURIComponent(a.id)}" target="_blank" rel="noopener" tr="Open full page ↗">Open full page ↗</a>
+    </div>
+  `);
+}
+
+function toggleActivitySelection(id){
+  const i = state.selectedActivityIds.indexOf(id);
+  if(i>-1) state.selectedActivityIds.splice(i,1);
+  else state.selectedActivityIds.push(id);
+  render();
+}
+
+function ageFromDob(dob){
+  if(!dob) return null;
+  const d = parseDate(dob);
+  let age = TODAY.getFullYear() - d.getFullYear();
+  const m = TODAY.getMonth() - d.getMonth();
+  if(m < 0 || (m === 0 && TODAY.getDate() < d.getDate())) age--;
+  return age;
+}
+function personDisplayName(p, idx){ return p.fullName && p.fullName.trim() ? p.fullName.trim() : `Traveler ${idx+1}`; }
+
+function renderSelectionBar(){
+  const bar = document.getElementById('selectionBar');
+  const list = document.getElementById('selectionList');
+  const totalEl = document.getElementById('selectionTotal');
+  const bookBtn = document.getElementById('bookBtn');
+  const backBtn = document.getElementById('barBackBtn');
+  backBtn.classList.add('hidden');
+
+  if(state.step === 0 && state.selectedActivityIds.length > 0){
+    bar.classList.add('is-visible');
+    list.innerHTML = state.selectedActivityIds.map(id=>{
+      const a = activityById(id); if(!a) return '';
+      return `<div class="selection-chip">
+        <span tr="${escapeAttr(a.name)}">${a.icon} ${a.name}</span>
+        <button data-remove-selection="${id}" aria-label="Remove" tr="✕">✕</button>
+      </div>`;
+    }).join('');
+    const total = state.selectedActivityIds.reduce((sum,id)=>{ const a=activityById(id); return sum + (a?priceAfterDiscount(a):0); }, 0);
+    totalEl.textContent = `From ${fmtMoney(total)} / person`;
+    totalEl.setAttribute('tr', `From ${fmtMoney(total)} / person`);
+    bookBtn.classList.remove('hidden');
+    bookBtn.textContent = 'Book these experiences →';
+    bookBtn.setAttribute('tr','Book these experiences →');
+    bookBtn.disabled = false;
+    return;
+  }
+
+  if(state.step === 1 && state.bookingActivities.length > 0){
+    bar.classList.add('is-visible');
+    backBtn.classList.remove('hidden');
+    backBtn.setAttribute('data-bar-back-target', '0');
+    list.innerHTML = state.bookingActivities.map(ba=>{
+      const a = activityById(ba.activityId); if(!a) return '';
+      return `<div class="selection-chip">
+        <span tr="${escapeAttr(a.name)}">${a.icon} ${a.name}</span>
+        ${ba.date ? `<span class="chip-date">· ${fmtBaDateRange(ba)}</span>` : `<span class="chip-date" style="color:#f2c9c9;" tr="no date yet">no date yet</span>`}
+        <button data-remove-booking-activity="${ba.activityId}" aria-label="Remove" tr="✕">✕</button>
+      </div>`;
+    }).join('');
+    const total = grandTotalFromBookingActivities();
+    totalEl.textContent = `Est. ${fmtMoney(total)} total`;
+    totalEl.setAttribute('tr', `Est. ${fmtMoney(total)} total`);
+    bookBtn.classList.remove('hidden');
+    bookBtn.textContent = 'Continue to people →';
+    bookBtn.setAttribute('tr','Continue to people →');
+    bookBtn.disabled = false;
+    return;
+  }
+
+  if(state.step === 2 && state.people.length > 0){
+    bar.classList.add('is-visible');
+    backBtn.classList.remove('hidden');
+    backBtn.setAttribute('data-bar-back-target', '1');
+    list.innerHTML = state.people.map((p,idx)=>{
+      const genderLabel = p.gender === 'Male' ? 'M' : p.gender === 'Female' ? 'F' : '—';
+      const age = ageFromDob(p.dob);
+      return `<div class="selection-chip">
+        <span tr="${escapeAttr(personDisplayName(p,idx))}">${personDisplayName(p,idx)}</span>
+        <span class="chip-date">· ${genderLabel} · ${age!=null ? age+'y' : '—'}</span>
+      </div>`;
+    }).join('');
+    totalEl.textContent = `${state.people.length} traveler${state.people.length>1?'s':''}`;
+    totalEl.setAttribute('tr', `${state.people.length} traveler${state.people.length>1?'s':''}`);
+    bookBtn.classList.remove('hidden');
+    bookBtn.textContent = 'Continue to review →';
+    bookBtn.setAttribute('tr','Continue to review →');
+    bookBtn.disabled = false;
+    return;
+  }
+
+  if(state.step === 3){
+    bar.classList.add('is-visible');
+    backBtn.classList.remove('hidden');
+    backBtn.setAttribute('data-bar-back-target', '2');
+    list.innerHTML = `<div class="selection-chip" style="background:transparent; border:none;">
+      <span tr="Review your booking before sending it to our team.">Review your booking before sending it to our team.</span>
+    </div>`;
+    totalEl.textContent = `Est. ${fmtMoney(grandTotal())} total`;
+    totalEl.setAttribute('tr', `Est. ${fmtMoney(grandTotal())} total`);
+    bookBtn.classList.remove('hidden');
+    bookBtn.textContent = 'Confirm booking →';
+    bookBtn.setAttribute('tr','Confirm booking →');
+    bookBtn.disabled = false;
+    return;
+  }
+
+  bar.classList.remove('is-visible');
+}
+
+function grandTotalFromBookingActivities(){
+  return state.bookingActivities.reduce((s,ba)=>{ const a=activityById(ba.activityId); return s + (a?priceAfterDiscount(a):0); }, 0);
+}
+
+/* =======================================================================
+   STEP 2 — DATES (one calendar per selected activity)
+   ======================================================================= */
+function isDateBlocked(activityId, dateObj){
+  if(dateObj < TODAY || dateObj > MAX_DATE) return true;
+  const blocked = state.availability[activityId] || [];
+  return blocked.includes(fmtDate(dateObj));
+}
+function rangeHasBlockedDay(activityId, startISO, endISO){
+  let cur = parseDate(startISO);
+  const end = parseDate(endISO);
+  while(cur <= end){
+    if(isDateBlocked(activityId, cur)) return true;
+    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate()+1);
+  }
+  return false;
+}
+function daysBetweenInclusive(startISO, endISO){
+  return Math.round((parseDate(endISO) - parseDate(startISO)) / 86400000) + 1;
+}
+function fmtBaDateRange(ba){
+  if(!ba.date) return '';
+  if(ba.endDate) return `${fmtDateHuman(ba.date)} → ${fmtDateHuman(ba.endDate)} (${daysBetweenInclusive(ba.date, ba.endDate)} days)`;
+  return fmtDateHuman(ba.date);
+}
+
+/* Multiday selection: click one day = single-day booking. Click a second,
+   different day = that pair becomes a date range (order doesn't matter,
+   we sort them). Click a third day = the previous pair is discarded and
+   that day becomes the new lone selection, ready to pair with a fourth. */
+function getCalPending(activityId, ba){
+  if(!state.calPending[activityId]){
+    if(ba.endDate) state.calPending[activityId] = [ba.date, ba.endDate];
+    else if(ba.date) state.calPending[activityId] = [ba.date];
+    else state.calPending[activityId] = [];
+  }
+  return state.calPending[activityId];
+}
+function handleCalendarDayClick(activityId, iso){
+  const ba = state.bookingActivities.find(b=>b.activityId===activityId);
+  if(!ba) return;
+  let pending = getCalPending(activityId, ba);
+
+  if(pending.length >= 2){
+    pending = [iso];
+  } else if(pending.length === 1){
+    if(pending[0] === iso){ pending = []; }
+    else { pending = [pending[0], iso]; }
+  } else {
+    pending = [iso];
+  }
+
+  if(pending.length === 2){
+    const sorted = [...pending].sort();
+    if(rangeHasBlockedDay(activityId, sorted[0], sorted[1])){
+      showToast('That range includes an unavailable date — pick two different days.');
+      pending = [iso]; // keep the latest click as a fresh start
+    }
+  }
+
+  state.calPending[activityId] = pending;
+  if(pending.length === 0){ ba.date = null; ba.endDate = null; }
+  else if(pending.length === 1){ ba.date = pending[0]; ba.endDate = null; }
+  else { const sorted = [...pending].sort(); ba.date = sorted[0]; ba.endDate = sorted[1]; }
+  render();
+}
+
+function renderCalendar(activityId, ba){
+  if(!state.calCursor[activityId]){
+    const base = ba.date ? parseDate(ba.date) : TODAY;
+    state.calCursor[activityId] = { y: base.getFullYear(), m: base.getMonth() };
+  }
+  const { y, m } = state.calCursor[activityId];
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const monthLabel = first.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+  const nextMonthDate = new Date(y, m+1, 1);
+  const canGoPrev = new Date(y, m, 1) > new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  const canGoNext = nextMonthDate <= MAX_DATE;
+
+  let cells = '';
+  const dows = ['S','M','T','W','T','F','S'];
+  cells += dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) cells += `<div class="cal-day out-range"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(y,m,d);
+    const iso = fmtDate(dateObj);
+    const blocked = isDateBlocked(activityId, dateObj);
+    const isPast = dateObj < TODAY;
+    const isToday = fmtDate(dateObj) === fmtDate(TODAY);
+    const isStart = iso === ba.date;
+    const isEnd = ba.endDate && iso === ba.endDate;
+    const isInRange = ba.endDate && iso > ba.date && iso < ba.endDate;
+    let cls = 'cal-day ';
+    if(blocked) cls += isPast ? 'disabled' : 'unavailable';
+    else cls += 'available';
+    if(isStart || isEnd) cls += ' selected';
+    if(isInRange) cls += ' in-range';
+    if(isToday) cls += ' today';
+    cells += `<button type="button" class="${cls}" ${blocked?'disabled':''} data-cal-day="${iso}" data-cal-activity="${activityId}">${d}</button>`;
+  }
+
+  return `
+  <div class="cal-grid-wrap">
+    <div class="cal-head">
+      <button data-cal-nav="prev" data-cal-activity="${activityId}" ${canGoPrev?'':'disabled'} aria-label="Previous month">‹</button>
+      <div class="cal-month-label">${monthLabel}</div>
+      <button data-cal-nav="next" data-cal-activity="${activityId}" ${canGoNext?'':'disabled'} aria-label="Next month">›</button>
+    </div>
+    <div class="cal-grid">${cells}</div>
+    <p style="font-size:12px; color:var(--ink-soft); margin-top:10px;" tr="Click one day for a single-day booking, or click two days to select a date range.">Click one day for a single-day booking, or click two days to select a date range.</p>
+    <div class="cal-legend">
+      <span><span class="legend-dot" style="background:var(--sand); border:1px solid var(--line);"></span><span tr="Available">Available</span></span>
+      <span><span class="legend-dot" style="background:var(--err-bg);"></span><span tr="Unavailable">Unavailable</span></span>
+      <span><span class="legend-dot" style="background:var(--coral);"></span><span tr="Selected">Selected</span></span>
+    </div>
+  </div>`;
+}
+
+function renderDatesStep(){
+  if(state.bookingActivities.length === 0){
+    return `<div class="step-panel"><div class="container">
+      <span class="eyebrow" tr="Step 2 of 5">Step 2 of 5</span>
+      <h1 class="step-title" tr="No experiences selected yet">No experiences selected yet</h1>
+      <p class="step-sub" tr="Go back and choose at least one experience to continue.">Go back and choose at least one experience to continue.</p>
+      <button class="btn btn-outline" data-goto-step="0" tr="← Back to experiences">← Back to experiences</button>
+    </div></div>`;
+  }
+
+  const blocks = state.bookingActivities.map(ba=>{
+    const a = activityById(ba.activityId);
+    const hasDate = !!ba.date;
+    const isRange = hasDate && !!ba.endDate;
+    const rangeLabel = isRange
+      ? `${fmtDateHuman(ba.date)} → ${fmtDateHuman(ba.endDate)} <span style="font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);">(${daysBetweenInclusive(ba.date, ba.endDate)} days)</span>`
+      : (hasDate ? fmtDateHuman(ba.date) : `<span class="empty" tr="Not chosen yet">Not chosen yet</span>`);
+    return `
+    <div class="dates-activity-block ${hasDate?'has-date':''}" data-dates-block="${ba.activityId}">
+      <div class="dates-activity-head">
+        <div class="dates-activity-title">
+          <span class="ico">${a.icon}</span>
+          <div>
+            <h3 tr="${escapeAttr(a.name)}">${a.name}</h3>
+            ${a.hours ? `<div class="tour-hours" tr="${escapeAttr(a.hours)}">🕒 ${a.hours}</div>` : `<div style="font-size:12.5px; color:var(--ink-soft);" tr="${escapeAttr(a.durationLabel)}">${a.durationLabel}</div>`}
+          </div>
+        </div>
+        <span class="date-status-badge ${hasDate?'done':'pending'}" tr="${hasDate ? 'Date selected' : 'Date required'}">${hasDate ? '✓ Date selected' : 'Date required'}</span>
+      </div>
+      <div class="cal-wrap">
+        ${renderCalendar(ba.activityId, ba)}
+        <div class="cal-side">
+          <div class="selected-date-display">
+            <div class="label" tr="${isRange?'Selected dates':'Selected date'}">${isRange?'Selected dates':'Selected date'}</div>
+            <div class="value" style="${isRange?'font-size:15px;':''}">${rangeLabel}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="step-panel">
+    <div class="container">
+      <span class="eyebrow" tr="Step 2 of 5">Step 2 of 5</span>
+      <h1 class="step-title" tr="Pick a date for each experience">Pick a date for each experience</h1>
+      <p class="step-sub" tr="Availability is set by our team and updates in real time. Dates can be booked up to two and a half years in advance.">Availability is set by our team and updates in real time. Dates can be booked up to two and a half years in advance.</p>
+      ${blocks}
+    </div>
+  </div>`;
+}
+
+/* =======================================================================
+   STEP 3 — PEOPLE
+   ======================================================================= */
+const CONTACT_FIELDS = ['fullName','gender','nationality','dob','dobDay','dobMonth','dobYear','allergies','email','language','notes'];
+// "Only the 1st traveler's full name and date of birth are required.
+//  For the rest, only allergies, gender and equipment rental [are required]."
+const REQUIRED_FIELDS_FIRST = ['fullName','dob'];
+const REQUIRED_FIELDS_REST  = ['allergies','gender'];
+const MAIN_CONTACT_REQUIRED = ['fullName','dob']; // standalone contact behaves like traveler 1
+function requiredFieldsForIndex(idx){ return idx === 0 ? REQUIRED_FIELDS_FIRST : REQUIRED_FIELDS_REST; }
+
+function contactFieldsOf(obj){ const o={}; CONTACT_FIELDS.forEach(k=>o[k]=obj[k]); return o; }
+
+function onToggleSameAsFirst(checked){
+  state.sameAsFirst = checked;
+  if(checked){
+    Object.assign(state.people[0], contactFieldsOf(state.mainContact));
+  } else {
+    const fresh = emptyPerson(false);
+    Object.assign(state.people[0], fresh);
+  }
+  render();
+}
+
+function updatePersonField(personId, field, value){
+  const p = state.people.find(x=>x.id===personId);
+  if(!p) return;
+  p[field] = value;
+  const idx = state.people.indexOf(p);
+  if(idx === 0 && state.sameAsFirst && CONTACT_FIELDS.includes(field)){
+    state.mainContact[field] = value;
+  }
+}
+function updateContactField(field, value){ state.mainContact[field] = value; }
+
+function addPerson(){
+  state.people.push(emptyPerson(false));
+  render();
+  setTimeout(()=>{
+    const cards = document.querySelectorAll('.person-card');
+    cards[cards.length-1]?.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 60);
+}
+function deletePerson(personId){
+  if(state.people.length <= 1){ showToast('At least one traveler is required.'); return; }
+  const idx = state.people.findIndex(p=>p.id===personId);
+  state.people.splice(idx,1);
+  // Clean up any activity-client assignments referencing this person.
+  Object.keys(state.clientAssignments).forEach(actId=>{
+    state.clientAssignments[actId] = (state.clientAssignments[actId]||[]).filter(id=>id!==personId);
+  });
+  if(idx===0 && state.sameAsFirst && state.people[0]){
+    Object.assign(state.people[0], contactFieldsOf(state.mainContact));
+  }
+  render();
+}
+function togglePersonCollapsed(personId){ state.collapsed[personId] = !state.collapsed[personId]; render(); }
+
+/* ---- Returning-client lookup ------------------------------------- */
+async function checkClientHistory(personId, email){
+  if(!email || !email.includes('@')) return;
+  const db = await storeGet(SK.clients, true) || {};
+  const rec = db[email.toLowerCase()];
+  const p = state.people.find(x=>x.id===personId);
+  if(!p) return;
+  if(rec && rec.history && rec.history.length){
+    const latest = rec.history[rec.history.length-1];
+    p._welcomeBack = { date: latest.date };
+  } else {
+    p._welcomeBack = null;
+  }
+  render();
+}
+function applySavedDetails(personId){
+  storeGet(SK.clients, true).then(db=>{
+    db = db || {};
+    const p = state.people.find(x=>x.id===personId);
+    if(!p) return;
+    const rec = db[p.email.toLowerCase()];
+    if(!rec || !rec.history.length) return;
+    const latest = rec.history[rec.history.length-1];
+    const snap = latest.snapshot;
+    Object.assign(p, snap, { id: p.id, email: p.email, _welcomeBack: p._welcomeBack });
+    const idx = state.people.indexOf(p);
+    if(idx===0 && state.sameAsFirst) Object.assign(state.mainContact, contactFieldsOf(p));
+    showToast('Filled in your saved details — feel free to edit anything.');
+    render();
+  });
+}
+
+/* ---- Equipment section --------------------------------------------- */
+function finSizeOptions(person){
+  const g = person.gender;
+  const buildRows = (label, table)=> table.map(r=>`<option value="${label}:${r[0]}" ${person.items.fins.size===label+':'+r[0]?'selected':''}>${r[1]!==''?'EU '+r[1]:''} · MX ${r[2]} · US ${r[3]} (${r[0]})</option>`).join('');
+  if(g === 'Male') return buildRows('Men', FIN_CHART.Male);
+  if(g === 'Female') return buildRows('Women', FIN_CHART.Female);
+  return `<option value="" disabled tr="Select gender above first">Select gender above first</option>`;
+}
+
+function sizeSelect(person, itemKey, sizes){
+  return `<select data-equip-size="${itemKey}" data-person="${person.id}">
+    <option value="" tr="Select size">Select size…</option>
+    ${sizes.map(s=>`<option value="${s}" ${person.items[itemKey].size===s?'selected':''}>${s}</option>`).join('')}
+  </select>`;
+}
+
+const SIZE_RANGE = ['XXS','XS','S','M','L','XL','XXL'];
+
+function renderEquipItem(person, key, label, kind){
+  // kind: 'size' (BCD/Wetsuit), 'fins', 'plain' (mask/computer), 'regulator'
+  const item = person.items[key];
+  if(!item) return '';
+  const checked = item.checked;
+  if(key==='regulator' && person.ownRegulatorBrought) return ''; // hidden — bringing their own
+  let body = '';
+  if(checked){
+    if(kind==='size'){
+      body = person.knowSizes ? sizeSelect(person, key, SIZE_RANGE) : `<span style="font-size:12.5px; color:var(--ink-soft);" tr="Uses height/weight below">Uses height &amp; weight below</span>`;
+    } else if(kind==='fins'){
+      body = person.knowSizes ? `<select data-equip-size="fins" data-person="${person.id}"><option value="" tr="Select size">Select size…</option>${finSizeOptions(person)}</select>` : `<span style="font-size:12.5px; color:var(--ink-soft);" tr="Uses height/weight below">Uses height &amp; weight below</span>`;
+    }
+  }
+  return `
+  <div class="equip-item ${checked?'checked':''}">
+    <div class="equip-item-head">
+      <input type="checkbox" id="eq_${person.id}_${key}" data-equip-check="${key}" data-person="${person.id}" ${checked?'checked':''}>
+      <label for="eq_${person.id}_${key}" tr="${escapeAttr(label)}">${label}</label>
+    </div>
+    <div class="equip-item-body">${body}</div>
+  </div>`;
+}
+
+function renderOwnRegulatorItem(person){
+  const checked = person.ownRegulatorBrought;
+  return `
+  <div class="equip-item ${checked?'checked':''}">
+    <div class="equip-item-head">
+      <input type="checkbox" id="ownreg_${person.id}" data-own-regulator ${checked?'checked':''}>
+      <label for="ownreg_${person.id}" tr="I'm bringing my own regulator">I'm bringing my own regulator</label>
+    </div>
+    <div class="equip-item-body">
+      ${checked ? `<label style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:500;">
+        <input type="checkbox" id="din_${person.id}" data-din-regulator style="width:16px;height:16px;accent-color:var(--teal);" ${person.ownRegulatorIsDIN?'checked':''}>
+        <span tr="It's a DIN regulator">It's a DIN regulator</span>
+      </label>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderEquipmentSection(person, idx){
+  const needsHW = person.items && ((!person.knowSizes) && (person.items.bcd.checked || person.items.wetsuit.checked || person.items.fins.checked));
+  const missingSizeButChecked = person.knowSizes && ((person.items.bcd.checked && !person.items.bcd.size) || (person.items.wetsuit.checked && !person.items.wetsuit.size) || (person.items.fins.checked && !person.items.fins.size));
+  const requireHW = needsHW || missingSizeButChecked;
+  const rentalRequired = idx > 0; // "For the rest, only allergies, gender and equipment rental [are required]"
+
+  // Rental items, alphabetical by displayed label: BCD, Dive computer, Fins, Mask, Regulator (rental), Wetsuit.
+  const rentalItemsHtml = [
+    renderEquipItem(person,'bcd','BCD','size'),
+    renderEquipItem(person,'computer','Dive computer','plain'),
+    renderEquipItem(person,'fins','Fins','fins'),
+    renderEquipItem(person,'mask','Mask','plain'),
+    renderEquipItem(person,'regulator','Regulator (rental)','regulator'),
+    renderEquipItem(person,'wetsuit','Wetsuit','size'),
+  ].join('');
+
+  return `
+  <div class="field span-2" style="gap:10px;">
+    <label tr="Will this person need rental equipment for their activities?">Will this person need rental equipment for their activities? ${rentalRequired?'<span class="req">*</span>':''}</label>
+    <div class="know-size-toggle">
+      <label><input type="radio" name="needsRental_${person.id}" data-needs-rental="yes" ${person.needsRental===true?'checked':''}> <span tr="Yes, renting equipment">Yes, renting equipment</span></label>
+      <label><input type="radio" name="needsRental_${person.id}" data-needs-rental="no" ${person.needsRental===false?'checked':''}> <span tr="No, bringing my own">No, bringing my own</span></label>
+    </div>
+  </div>
+
+  ${person.needsRental !== null ? `
+    <div class="field span-2" style="display:grid; gap:12px;">
+      ${renderOwnRegulatorItem(person)}
+    </div>
+  ` : ''}
+
+  ${person.needsRental === true ? `
+    <div class="field span-2">
+      <div class="equip-note" tr="Not sure of your BCD, wetsuit or fin size? No problem — switch to 'I don't know my sizes' and give us your height and weight instead, and our team will bring options to fit.">
+        Not sure of your BCD, wetsuit or fin size? No problem — switch to "I don't know my sizes" and give us your height and weight instead, and our team will bring options to fit.
+      </div>
+    </div>
+    <div class="field span-2">
+      <div class="know-size-toggle">
+        <label><input type="radio" name="knowSizes_${person.id}" data-know-sizes="yes" ${person.knowSizes?'checked':''}> <span tr="I know my sizes">I know my sizes</span></label>
+        <label><input type="radio" name="knowSizes_${person.id}" data-know-sizes="no" ${!person.knowSizes?'checked':''}> <span tr="I don't know my sizes">I don't know my sizes</span></label>
+      </div>
+    </div>
+
+    <div class="field span-2" style="display:grid; gap:12px;">
+      ${rentalItemsHtml}
+    </div>
+
+    ${requireHW ? `
+    <div class="field" data-field-key="height">
+      <label tr="Height">Height <span class="req">*</span></label>
+      <div style="display:flex; gap:8px;">
+        <input type="number" min="0" data-person-field="height" data-person="${person.id}" value="${person.height}" style="flex:1;">
+        <select data-person-field="heightUnit" data-person="${person.id}" style="width:80px;">
+          <option value="cm" ${person.heightUnit==='cm'?'selected':''}>cm</option>
+          <option value="in" ${person.heightUnit==='in'?'selected':''}>in</option>
+        </select>
+      </div>
+      <span class="field-error-msg hidden" tr="Height is required when a size isn't given">Height is required when a size isn't given</span>
+    </div>
+    <div class="field" data-field-key="weight">
+      <label tr="Weight">Weight <span class="req">*</span></label>
+      <div style="display:flex; gap:8px;">
+        <input type="number" min="0" data-person-field="weight" data-person="${person.id}" value="${person.weight}" style="flex:1;">
+        <select data-person-field="weightUnit" data-person="${person.id}" style="width:80px;">
+          <option value="kg" ${person.weightUnit==='kg'?'selected':''}>kg</option>
+          <option value="lb" ${person.weightUnit==='lb'?'selected':''}>lb</option>
+        </select>
+      </div>
+      <span class="field-error-msg hidden" tr="Weight is required when a size isn't given">Weight is required when a size isn't given</span>
+    </div>` : ''}
+  ` : ''}`;
+}
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function dobPartsFromISO(iso){
+  if(!iso) return {y:'',m:'',d:''};
+  const [y,m,d] = iso.split('-');
+  return { y: y||'', m: m?String(Number(m)):'', d: d?String(Number(d)):'' };
+}
+function composeDob(y,m,d){
+  if(!y || !m || !d) return '';
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+function renderDobSelects(target, targetAttr){
+  // Hydrate transient day/month/year parts from a stored ISO date the
+  // first time we see it (e.g. loaded from a draft or a returning
+  // client's saved profile) — after that, the three parts are the
+  // source of truth so a half-finished selection is never lost on
+  // re-render (this was the bug: deriving parts from `dob` every
+  // render wiped out picks made before all three fields were set).
+  if((!target.dobDay && !target.dobMonth && !target.dobYear) && target.dob){
+    const parts = dobPartsFromISO(target.dob);
+    target.dobDay = parts.d; target.dobMonth = parts.m; target.dobYear = parts.y;
+  }
+  const d = target.dobDay || '', m = target.dobMonth || '', y = target.dobYear || '';
+  const curYear = TODAY.getFullYear();
+  const minYear = curYear - 100;
+  const dayOpts = ['<option value="" tr="Day">Day</option>'].concat(
+    Array.from({length:31}, (_,i)=>i+1).map(i=>`<option value="${i}" ${Number(d)===i?'selected':''}>${i}</option>`)
+  ).join('');
+  const monthOpts = ['<option value="" tr="Month">Month</option>'].concat(
+    MONTH_NAMES.map((mn,idx)=>`<option value="${idx+1}" ${Number(m)===idx+1?'selected':''} tr="${mn}">${mn}</option>`)
+  ).join('');
+  const yearOpts = ['<option value="" tr="Year">Year</option>'].concat(
+    Array.from({length:curYear-minYear+1}, (_,i)=>curYear-i).map(yy=>`<option value="${yy}" ${Number(y)===yy?'selected':''}>${yy}</option>`)
+  ).join('');
+  return `<div class="dob-row">
+    <select ${targetAttr} data-dob-unit="day">${dayOpts}</select>
+    <select ${targetAttr} data-dob-unit="month">${monthOpts}</select>
+    <select ${targetAttr} data-dob-unit="year">${yearOpts}</select>
+  </div>`;
+}
+
+function renderPersonFieldsGrid(person, idx){
+  const gender = person.gender;
+  const langDefault = person.language || state.pageLanguage;
+  const nameReq = idx === 0, dobReq = idx === 0, genderReq = idx > 0, allergiesReq = idx > 0;
+  return `
+  <div class="field-grid">
+    <div class="field" data-field-key="fullName">
+      <label tr="Full name">Full name ${nameReq?'<span class="req">*</span>':''}</label>
+      <input type="text" data-person-field="fullName" data-person="${person.id}" value="${escapeAttr(person.fullName)}" placeholder="Jane Diver">
+      <span class="field-error-msg hidden" tr="Full name is required">Full name is required</span>
+    </div>
+    <div class="field" data-field-key="gender">
+      <label tr="Gender">Gender ${genderReq?'<span class="req">*</span>':''}</label>
+      <select data-person-field="gender" data-person="${person.id}">
+        <option value="" tr="Select…">Select…</option>
+        <option value="Male" ${gender==='Male'?'selected':''} tr="Male">Male</option>
+        <option value="Female" ${gender==='Female'?'selected':''} tr="Female">Female</option>
+      </select>
+      <span class="field-error-msg hidden" tr="Gender is required">Gender is required</span>
+      <span style="font-size:11px; color:var(--ink-soft);" tr="Used to match equipment sizing charts.">Used to match equipment sizing charts.</span>
+    </div>
+    <div class="field" data-field-key="nationality">
+      <label tr="Nationality">Nationality</label>
+      <input type="text" list="countryList" autocomplete="off" data-person-field="nationality" data-person="${person.id}" value="${escapeAttr(person.nationality)}" placeholder="Start typing a country…">
+    </div>
+    <div class="field" data-field-key="dob">
+      <label tr="Date of birth">Date of birth ${dobReq?'<span class="req">*</span>':''}</label>
+      ${renderDobSelects(person, `data-dob-person="${person.id}"`)}
+      <span class="field-error-msg hidden" tr="Date of birth is required">Date of birth is required</span>
+    </div>
+    <div class="field span-2" data-field-key="allergies">
+      <label tr="Allergies or dietary restrictions">Allergies or dietary restrictions ${allergiesReq?'<span class="req">*</span>':''}</label>
+      <input type="text" data-person-field="allergies" data-person="${person.id}" value="${escapeAttr(person.allergies)}" placeholder="None, or e.g. shellfish allergy">
+      <span class="field-error-msg hidden" tr="Please enter 'None' if not applicable">Please enter "None" if not applicable</span>
+    </div>
+    <div class="field" data-field-key="email">
+      <label tr="Email">Email</label>
+      <input type="email" data-person-field="email" data-person="${person.id}" value="${escapeAttr(person.email)}" placeholder="jane@example.com" data-email-blur="${person.id}">
+    </div>
+    <div class="field" data-field-key="language">
+      <label tr="Preferred language">Preferred language</label>
+      <select data-person-field="language" data-person="${person.id}">
+        <option value="en" ${langDefault==='en'?'selected':''} tr="English">English</option>
+        <option value="es" ${langDefault==='es'?'selected':''} tr="Español">Español</option>
+      </select>
+    </div>
+    <div class="field span-2" data-field-key="notes">
+      <label tr="Notes">Notes</label>
+      <textarea data-person-field="notes" data-person="${person.id}" placeholder="Anything else we should know?">${person.notes}</textarea>
+    </div>
+  </div>
+  ${person._welcomeBack ? `
+    <div class="welcome-back">
+      <span>👋</span>
+      <span tr="Welcome back with us! You visited us on ${fmtDateHuman(person._welcomeBack.date)}">Welcome back with us! You visited us on ${fmtDateHuman(person._welcomeBack.date)}</span>
+      <button class="btn-text" data-apply-saved="${person.id}" tr="Fill in my saved details">Fill in my saved details</button>
+    </div>` : ''}`;
+}
+
+function isPersonComplete(p, idx){
+  const required = requiredFieldsForIndex(idx);
+  const contactOk = required.every(f=> String(p[f]||'').trim() !== '');
+  if(!contactOk) return false;
+  if(idx > 0 && (p.needsRental === null || p.needsRental === undefined)) return false;
+  if(p.needsRental === true){
+    const sizedChecked = ['bcd','wetsuit','fins'].filter(k=>p.items[k].checked);
+    const needsHW = (!p.knowSizes && sizedChecked.length>0) || sizedChecked.some(k=>!p.items[k].size);
+    if(needsHW && (!p.height || !p.weight)) return false;
+  }
+  return true;
+}
+
+function renderPersonCard(person, idx){
+  const isMain = idx===0 && state.sameAsFirst;
+  const complete = isPersonComplete(person, idx);
+  const collapsed = !!state.collapsed[person.id];
+  return `
+  <div class="person-card ${complete?'is-complete':''} ${collapsed?'is-collapsed':''}" data-person-card="${person.id}">
+    <div class="person-head" data-toggle-collapse="${person.id}">
+      <div class="person-head-left">
+        <div class="person-badge">${idx+1}</div>
+        <div>
+          <div class="person-title" tr="Traveler ${idx+1}${isMain?' — Main Contact':''}">${person.fullName || ('Traveler ' + (idx+1))}${isMain?' <span style="font-size:11px; font-family:var(--font-mono); color:var(--teal); margin-left:6px;">MAIN CONTACT</span>':''}</div>
+          <div class="person-status ${complete?'ok':'pending'}" tr="${complete?'Complete':'Incomplete'}">${complete?'✓ Complete':'Incomplete'}</div>
+        </div>
+      </div>
+      <div class="person-head-actions">
+        ${state.people.length>1 ? `<button class="icon-btn" data-delete-person="${person.id}" title="Remove traveler" tr="✕">✕</button>` : ''}
+        <span class="chevron">▾</span>
+      </div>
+    </div>
+    <div class="person-body">
+      ${renderPersonFieldsGrid(person, idx)}
+      <div class="section-label" tr="Rental equipment">Rental equipment</div>
+      ${renderEquipmentSection(person, idx)}
+    </div>
+  </div>`;
+}
+
+function renderPeopleStep(){
+  const mainCard = !state.sameAsFirst ? `
+    <div class="person-card ${(()=>{ return MAIN_CONTACT_REQUIRED.every(f=>String(state.mainContact[f]||'').trim()!=='')?'is-complete':''; })()}" data-main-contact-card="1">
+      <div class="person-head">
+        <div class="person-head-left">
+          <div class="person-badge" style="background:var(--coral);">MC</div>
+          <div>
+            <div class="person-title" tr="Main Contact">Main Contact</div>
+            <div style="font-size:12px; color:var(--ink-soft);" tr="This is whoever is making the booking">This is whoever is making the booking</div>
+          </div>
+        </div>
+      </div>
+      <div class="person-body">
+        <div class="field-grid">
+          <div class="field" data-field-key="fullName" data-contact-field="1">
+            <label tr="Full name">Full name <span class="req">*</span></label>
+            <input type="text" data-contact-field="fullName" value="${escapeAttr(state.mainContact.fullName)}">
+            <span class="field-error-msg hidden" tr="Full name is required">Full name is required</span>
+          </div>
+          <div class="field" data-field-key="gender">
+            <label tr="Gender">Gender</label>
+            <select data-contact-field="gender">
+              <option value="" tr="Select…">Select…</option>
+              <option value="Male" ${state.mainContact.gender==='Male'?'selected':''} tr="Male">Male</option>
+              <option value="Female" ${state.mainContact.gender==='Female'?'selected':''} tr="Female">Female</option>
+            </select>
+          </div>
+          <div class="field"><label tr="Nationality">Nationality</label><input type="text" list="countryList" autocomplete="off" data-contact-field="nationality" value="${escapeAttr(state.mainContact.nationality)}" placeholder="Start typing a country…"></div>
+          <div class="field" data-field-key="dob">
+            <label tr="Date of birth">Date of birth <span class="req">*</span></label>
+            ${renderDobSelects(state.mainContact, `data-dob-contact="1"`)}
+            <span class="field-error-msg hidden" tr="Date of birth is required">Date of birth is required</span>
+          </div>
+          <div class="field span-2" data-field-key="allergies">
+            <label tr="Allergies or dietary restrictions">Allergies or dietary restrictions</label>
+            <input type="text" data-contact-field="allergies" value="${escapeAttr(state.mainContact.allergies)}">
+          </div>
+          <div class="field"><label tr="Email">Email</label><input type="email" data-contact-field="email" value="${escapeAttr(state.mainContact.email)}"></div>
+          <div class="field"><label tr="Preferred language">Preferred language</label>
+            <select data-contact-field="language">
+              <option value="en" ${state.mainContact.language==='en'?'selected':''} tr="English">English</option>
+              <option value="es" ${state.mainContact.language==='es'?'selected':''} tr="Español">Español</option>
+            </select>
+          </div>
+          <div class="field span-2"><label tr="Notes">Notes</label><textarea data-contact-field="notes">${state.mainContact.notes}</textarea></div>
+        </div>
+      </div>
+    </div>` : '';
+
+  const personCards = state.people.map((p,i)=>renderPersonCard(p,i)).join('');
+
+  return `
+  <div class="step-panel">
+    <div class="container">
+      <span class="eyebrow" tr="Step 3 of 5">Step 3 of 5</span>
+      <h1 class="step-title" tr="Who's coming?">Who's coming?</h1>
+      <p class="step-sub" tr="Tell us about the main contact and everyone joining. Fields marked with an asterisk are required.">Tell us about the main contact and everyone joining. Fields marked with an asterisk are required.</p>
+
+      <div class="contact-toggle-row">
+        <div class="checkbox-row">
+          <input type="checkbox" id="sameAsFirst" ${state.sameAsFirst?'checked':''}>
+          <label for="sameAsFirst" tr="The main contact (whoever is booking) is also the first traveler">The main contact (whoever is booking) is also the first traveler</label>
+        </div>
+      </div>
+
+      ${mainCard}
+      ${personCards}
+
+      <button class="add-person-btn" id="addPersonBtn" tr="+ Add another traveler">+ Add another traveler</button>
+    </div>
+  </div>`;
+}
+
+/* =======================================================================
+   STEP 4 — REVIEW  (client↔activity assignment + legal-size resume)
+   ======================================================================= */
+function ensureAssignmentsDefault(){
+  state.bookingActivities.forEach(ba=>{
+    if(!state.clientAssignments[ba.activityId]){
+      state.clientAssignments[ba.activityId] = state.people.map(p=>p.id);
+    } else {
+      // drop assignments for people who no longer exist
+      const validIds = state.people.map(p=>p.id);
+      state.clientAssignments[ba.activityId] = state.clientAssignments[ba.activityId].filter(id=>validIds.includes(id));
+    }
+  });
+}
+
+function toggleClientAssignment(activityId, personId){
+  const list = state.clientAssignments[activityId] || [];
+  const i = list.indexOf(personId);
+  if(i>-1) list.splice(i,1); else list.push(personId);
+  state.clientAssignments[activityId] = list;
+  render();
+}
+
+function activityCost(ba){
+  const a = activityById(ba.activityId);
+  const count = (state.clientAssignments[ba.activityId]||[]).length;
+  return priceAfterDiscount(a) * count;
+}
+function grandTotal(){ return state.bookingActivities.reduce((s,ba)=>s+activityCost(ba),0); }
+
+function equipmentSummaryLine(p){
+  if(p.needsRental !== true) return p.needsRental===false ? 'Bringing own gear' : '—';
+  const parts = [];
+  if(p.ownRegulatorBrought) parts.push('Own regulator' + (p.ownRegulatorIsDIN?' (DIN)':' (yoke)'));
+  ['bcd','wetsuit','fins'].forEach(k=>{
+    if(p.items[k].checked){
+      const label = k==='bcd'?'BCD':k==='wetsuit'?'Wetsuit':'Fins';
+      parts.push(label + (p.items[k].size ? ' · ' + p.items[k].size : ' · size TBD (H/W given)'));
+    }
+  });
+  ['mask','regulator','computer'].forEach(k=>{
+    if(p.items[k] && p.items[k].checked) parts.push(k==='mask'?'Mask':k==='regulator'?'Regulator (rental)':'Dive computer');
+  });
+  if(!p.knowSizes && (p.height||p.weight)) parts.push(`H/W: ${p.height}${p.heightUnit} / ${p.weight}${p.weightUnit}`);
+  return parts.length ? parts.join(', ') : 'Rental requested — details pending';
+}
+
+function buildResumeHtml(statusLabel, statusTone){
+  const contact = state.sameAsFirst ? state.people[0] : state.mainContact;
+  const activityRows = state.bookingActivities.map(ba=>{
+    const a = activityById(ba.activityId);
+    const names = (state.clientAssignments[ba.activityId]||[]).map(id=> (state.people.find(p=>p.id===id)||{}).fullName || '—').join(', ');
+    return `
+    <div class="lg-activity-card">
+      <h4 tr="${escapeAttr(a.name)}">${a.icon} ${a.name}</h4>
+      <div class="lg-row"><span class="k" tr="Date">Date</span><span class="v">${fmtBaDateRange(ba)}</span></div>
+      <div class="lg-row"><span class="k" tr="Participants">Participants</span><span class="v">${names || '—'}</span></div>
+      <div class="lg-row"><span class="k" tr="Price">Price</span><span class="v">${fmtMoney(priceAfterDiscount(a))} × ${(state.clientAssignments[ba.activityId]||[]).length} = ${fmtMoney(activityCost(ba))}</span></div>
+    </div>`;
+  }).join('');
+
+  const peopleRows = state.people.map((p,i)=>`
+    <div class="lg-activity-card">
+      <h4>${p.fullName || 'Traveler '+(i+1)}</h4>
+      <div class="lg-row"><span class="k" tr="Gender">Gender</span><span class="v">${p.gender||'—'}</span></div>
+      <div class="lg-row"><span class="k" tr="Nationality">Nationality</span><span class="v">${p.nationality||'—'}</span></div>
+      <div class="lg-row"><span class="k" tr="Date of birth">Date of birth</span><span class="v">${p.dob||'—'}</span></div>
+      <div class="lg-row"><span class="k" tr="Allergies / dietary">Allergies / dietary</span><span class="v">${p.allergies||'—'}</span></div>
+      <div class="lg-row"><span class="k" tr="Rental equipment">Rental equipment</span><span class="v">${equipmentSummaryLine(p)}</span></div>
+      ${p.notes ? `<div class="lg-row"><span class="k" tr="Notes">Notes</span><span class="v">${p.notes}</span></div>` : ''}
+    </div>`).join('');
+
+  return `
+  <div class="legal-sheet">
+    <div class="legal-sheet-scroll">
+      <div class="legal-head">
+        <div class="lg-brand" tr="Hidrosfera">Hidrosfera</div>
+        <div style="font-family:var(--font-mono); font-size:12px; opacity:.8; margin-top:4px;" tr="Baja California Sur, México">Baja California Sur, México</div>
+        <div class="lg-status" style="${statusTone==='ok'?'background:var(--ok-bg); color:var(--ok);':statusTone==='err'?'background:var(--err-bg); color:var(--err);':''}" tr="${escapeAttr(statusLabel)}">${statusLabel}</div>
+        ${state.bookingCode ? `<div style="font-family:var(--font-mono); font-size:12px; margin-top:10px; opacity:.85;">Booking #${state.bookingCode}</div>` : ''}
+      </div>
+      <div class="legal-body">
+        <div class="lg-section">
+          <div class="lg-section-title" tr="Main contact">Main contact</div>
+          <div class="lg-row"><span class="k" tr="Name">Name</span><span class="v">${contact.fullName||'—'}</span></div>
+          <div class="lg-row"><span class="k" tr="Email">Email</span><span class="v">${contact.email||'—'}</span></div>
+          <div class="lg-row"><span class="k" tr="Language">Language</span><span class="v">${(contact.language||'en').toUpperCase()}</span></div>
+          <button class="modify-link" data-modify-step="2" tr="Modify">Modify</button>
+        </div>
+        <div class="lg-section">
+          <div class="lg-section-title" tr="Activities &amp; dates">Activities &amp; dates</div>
+          ${activityRows}
+          <button class="modify-link" data-modify-step="1" tr="Modify dates">Modify dates</button>
+          <button class="modify-link" data-modify-step="0" tr="Modify experiences">Modify experiences</button>
+        </div>
+        <div class="lg-section">
+          <div class="lg-section-title" tr="Travelers">Travelers</div>
+          ${peopleRows}
+          <button class="modify-link" data-modify-step="2" tr="Modify traveler info">Modify traveler info</button>
+        </div>
+        <div class="lg-total-row"><span tr="Estimated total">Estimated total</span><span>${fmtMoney(grandTotal())}</span></div>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin-top:8px;" tr="Final pricing is confirmed by our team based on real-time availability. A deposit may be requested to confirm your booking.">Final pricing is confirmed by our team based on real-time availability. A deposit may be requested to confirm your booking.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderReviewStep(){
+  ensureAssignmentsDefault();
+  const assignBlocks = state.bookingActivities.map(ba=>{
+    const a = activityById(ba.activityId);
+    const assigned = state.clientAssignments[ba.activityId]||[];
+    return `
+    <div class="assign-block">
+      <div class="assign-head">
+        <h3 tr="${escapeAttr(a.name)}">${a.icon} ${a.name} — <span style="font-weight:400; font-size:14px; color:var(--ink-soft);">${fmtBaDateRange(ba)}</span></h3>
+      </div>
+      <p style="font-size:13px; color:var(--ink-soft); margin-bottom:10px;" tr="Everyone is included by default — uncheck anyone who isn't joining this activity.">Everyone is included by default — uncheck anyone who isn't joining this activity.</p>
+      <div class="assign-clients">
+        ${state.people.map(p=>`
+          <label class="client-pill ${assigned.includes(p.id)?'active':''}">
+            <input type="checkbox" data-assign-activity="${ba.activityId}" data-assign-person="${p.id}" ${assigned.includes(p.id)?'checked':''}>
+            <span>${p.fullName || 'Traveler'}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="step-panel">
+    <div class="container">
+      <span class="eyebrow" tr="Step 4 of 5">Step 4 of 5</span>
+      <h1 class="step-title" tr="Review your booking">Review your booking</h1>
+      <p class="step-sub" tr="Confirm who's doing what, then review the full summary below before sending your request.">Confirm who's doing what, then review the full summary below before sending your request.</p>
+
+      <div class="section-label" tr="Who's doing what">Who's doing what</div>
+      <div style="margin-top:16px;">${assignBlocks}</div>
+
+      <div class="section-label" tr="Booking summary">Booking summary</div>
+      <div style="margin-top:20px;">${buildResumeHtml('Draft — not yet sent', 'draft')}</div>
+    </div>
+  </div>`;
+}
+
+/* =======================================================================
+   STEP 5 — DONE
+   ======================================================================= */
+function renderDoneStep(){
+  if(!state.bookingCode){
+    return `<div class="step-panel"><div class="container">
+      <p tr="Please complete the booking steps first.">Please complete the booking steps first.</p>
+      <button class="btn btn-outline" data-goto-step="0" tr="Start over">Start over</button>
+    </div></div>`;
+  }
+  return `
+  <div class="step-panel">
+    <div class="container">
+      <div class="done-wrap">
+        <svg class="done-icon" viewBox="0 0 88 88" fill="none">
+          <circle cx="44" cy="44" r="42" fill="#E6F2EA" stroke="#2E7D4F" stroke-width="2"/>
+          <path d="M28 45l11 11 21-23" stroke="#2E7D4F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1 class="step-title" tr="Your request is in!">Your request is in!</h1>
+        <p class="step-sub" style="margin:0 auto 6px;" tr="We've sent a confirmation-pending summary to your email. Our team checks real-time availability and will confirm within 24–48 hours.">We've sent a confirmation-pending summary to your email. Our team checks real-time availability and will confirm within 24–48 hours.</p>
+        <div class="booking-code" tr="Booking #${state.bookingCode}">Booking #${state.bookingCode}</div>
+        <div style="margin-top:28px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn-outline" id="previewEmailBtn" tr="Preview the email we sent">✉ Preview the email we sent</button>
+          <button class="btn btn-primary" id="startOverBtn" tr="Book another experience">Book another experience</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* =======================================================================
+   VALIDATION — "take the page to where info is missing and mark it"
+   ======================================================================= */
+function clearFieldError(el){ el.classList.remove('field-error'); const m=el.querySelector('.field-error-msg'); if(m) m.classList.add('hidden'); }
+function markFieldError(el){ el.classList.add('field-error'); const m=el.querySelector('.field-error-msg'); if(m) m.classList.remove('hidden'); }
+
+function validateDatesStep(){
+  document.querySelectorAll('.dates-activity-block').forEach(el=>el.classList.remove('missing-date'));
+  const missing = state.bookingActivities.find(ba=>!ba.date);
+  if(missing){
+    const el = document.querySelector(`[data-dates-block="${missing.activityId}"]`);
+    if(el){ el.classList.add('missing-date'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+    showToast('Please choose a date for every experience.');
+    return false;
+  }
+  return true;
+}
+
+function validatePeopleStep(){
+  // Main contact (only when it's a separate card) — behaves like traveler 1.
+  if(!state.sameAsFirst){
+    const card = document.querySelector('[data-main-contact-card]');
+    if(card){
+      let ok = true; let firstBad = null;
+      MAIN_CONTACT_REQUIRED.forEach(f=>{
+        const wrap = card.querySelector(`[data-field-key="${f}"]`);
+        if(!wrap) return;
+        clearFieldError(wrap);
+        if(String(state.mainContact[f]||'').trim()===''){ markFieldError(wrap); ok=false; if(!firstBad) firstBad=wrap; }
+      });
+      if(!ok){ firstBad.scrollIntoView({behavior:'smooth', block:'center'}); showToast('Please complete the main contact\'s required fields.'); return false; }
+    }
+  }
+  // Each traveler
+  for(let i=0;i<state.people.length;i++){
+    const p = state.people[i];
+    const card = document.querySelector(`[data-person-card="${p.id}"]`);
+    if(!card) continue;
+    let ok = true; let firstBad = null;
+    requiredFieldsForIndex(i).forEach(f=>{
+      const wrap = card.querySelector(`[data-field-key="${f}"]`);
+      if(!wrap) return;
+      clearFieldError(wrap);
+      if(String(p[f]||'').trim()===''){ markFieldError(wrap); ok=false; if(!firstBad) firstBad=wrap; }
+    });
+    if(i > 0 && (p.needsRental === null || p.needsRental === undefined)){ ok=false; }
+    if(p.needsRental === true){
+      const sizedChecked = ['bcd','wetsuit','fins'].filter(k=>p.items[k].checked);
+      const needsHW = (!p.knowSizes && sizedChecked.length>0) || sizedChecked.some(k=>!p.items[k].size);
+      if(needsHW){
+        const hEl = card.querySelector('[data-field-key="height"]');
+        const wEl = card.querySelector('[data-field-key="weight"]');
+        if(!p.height){ ok=false; if(hEl){ markFieldError(hEl); if(!firstBad) firstBad=hEl; } }
+        if(!p.weight){ ok=false; if(wEl){ markFieldError(wEl); if(!firstBad) firstBad=wEl; } }
+      }
+    }
+    if(!ok){
+      state.collapsed[p.id] = false;
+      card.classList.remove('is-collapsed');
+      card.classList.add('is-invalid');
+      (firstBad || card).scrollIntoView({behavior:'smooth', block:'center'});
+      showToast(`Please complete the required information for ${personDisplayName(p,i)}.`);
+      return false;
+    }
+  }
+  return true;
+}
+
+function validateCurrentStep(){
+  if(state.step === 1) return validateDatesStep();
+  if(state.step === 2) return validatePeopleStep();
+  return true;
+}
+
+/* =======================================================================
+   BOOKING CONFIRMATION (submits into the shared "database")
+   ======================================================================= */
+function generateBookingCode(){
+  const y = TODAY.getFullYear();
+  const rand = Math.random().toString(36).slice(2,7).toUpperCase();
+  return `HDS-${y}-${rand}`;
+}
+
+async function handleConfirmBooking(){
+  if(!validatePeopleStep()){ goToStep(2); return; }
+  if(!validateDatesStep()){ goToStep(1); return; }
+  ensureAssignmentsDefault();
+
+  const code = generateBookingCode();
+  const booking = {
+    id: uid('bk'), bookingCode: code, createdAt: new Date().toISOString(), status: 'pending',
+    pageLanguage: state.pageLanguage,
+    sameAsFirst: state.sameAsFirst,
+    mainContact: state.sameAsFirst ? contactFieldsOf(state.people[0]) : { ...state.mainContact },
+    people: JSON.parse(JSON.stringify(state.people)),
+    activities: state.bookingActivities.map(ba => ({
+      activityId: ba.activityId, date: ba.date, endDate: ba.endDate || null,
+      assignedPersonIds: (state.clientAssignments[ba.activityId]||[]).slice(),
+      unitPrice: priceAfterDiscount(activityById(ba.activityId))
+    })),
+    total: grandTotal(),
+    deposit: 0,
+  };
+
+  const bookings = await storeGet(SK.bookings, true) || [];
+  bookings.push(booking);
+  await storeSet(SK.bookings, bookings, true);
+
+  // Merge into the client database — keyed by email, history is
+  // append-only so a returning client's older visits are preserved.
+  const db = await storeGet(SK.clients, true) || {};
+  const firstDate = booking.activities[0] ? booking.activities[0].date : todayISO();
+  state.people.forEach(p=>{
+    if(!p.email) return;
+    const key = p.email.toLowerCase();
+    if(!db[key]) db[key] = { history: [] };
+    db[key].history.push({ date: firstDate, bookingCode: code, snapshot: JSON.parse(JSON.stringify(p)) });
+  });
+  await storeSet(SK.clients, db, true);
+
+  state.bookingCode = code;
+  state.step = 4;
+  state.furthestStepReached = 4;
+  window.scrollTo({top:0, behavior:'smooth'});
+  render();
+  showToast('Booking request sent — confirmation is pending.');
+}
+
+/* =======================================================================
+   EVENT DELEGATION — bound once; markup is re-created by render() but
+   these listeners live on stable ancestors.
+   ======================================================================= */
+function refreshPersonCardStyle(personId){
+  const p = state.people.find(x=>x.id===personId);
+  const card = document.querySelector(`[data-person-card="${personId}"]`);
+  if(!p || !card) return;
+  const idx = state.people.indexOf(p);
+  const complete = isPersonComplete(p, idx);
+  card.classList.toggle('is-complete', complete);
+  card.classList.remove('is-invalid');
+}
+function refreshMainContactCardStyle(){
+  const card = document.querySelector('[data-main-contact-card]');
+  if(!card) return;
+  const complete = MAIN_CONTACT_REQUIRED.every(f=>String(state.mainContact[f]||'').trim()!=='');
+  card.classList.toggle('is-complete', complete);
+}
+
+function resetEquipItemSize(person, key){ if(person.items[key] && 'size' in person.items[key]) person.items[key].size=''; }
+
+function initGlobalListeners(){
+  const app = document.getElementById('app');
+
+  // ---- CLICK ----
+  document.addEventListener('click', (e)=>{
+    const t = e.target;
+
+    const selectBtn = t.closest('[data-select-activity]');
+    if(selectBtn){ toggleActivitySelection(selectBtn.dataset.selectActivity); return; }
+
+    const moreInfoBtn = t.closest('[data-more-info]');
+    if(moreInfoBtn){ showMoreInfoModal(moreInfoBtn.dataset.moreInfo); return; }
+
+    const removeSel = t.closest('[data-remove-selection]');
+    if(removeSel){ const id=removeSel.dataset.removeSelection; state.selectedActivityIds = state.selectedActivityIds.filter(x=>x!==id); render(); return; }
+
+    if(t.id === 'bookBtn'){
+      if(state.step === 0) handleBookClick();
+      else if(state.step === 1) nextStep();
+      else if(state.step === 2) nextStep();
+      else if(state.step === 3) handleConfirmBooking();
+      return;
+    }
+    if(t.id === 'barBackBtn'){ prevStep(); return; }
+
+    const removeBookingAct = t.closest('[data-remove-booking-activity]');
+    if(removeBookingAct){
+      const id = removeBookingAct.dataset.removeBookingActivity;
+      state.bookingActivities = state.bookingActivities.filter(ba=>ba.activityId!==id);
+      state.selectedActivityIds = state.selectedActivityIds.filter(x=>x!==id);
+      render(); return;
+    }
+
+    const gotoBtn = t.closest('[data-goto-step]');
+    if(gotoBtn){ goToStep(Number(gotoBtn.dataset.gotoStep)); return; }
+    const modifyBtn = t.closest('[data-modify-step]');
+    if(modifyBtn){ goToStep(Number(modifyBtn.dataset.modifyStep)); return; }
+
+    const calNav = t.closest('[data-cal-nav]');
+    if(calNav){
+      const actId = calNav.dataset.calActivity;
+      const cur = state.calCursor[actId];
+      let { y, m } = cur;
+      if(calNav.dataset.calNav==='prev'){ m--; if(m<0){m=11;y--;} } else { m++; if(m>11){m=0;y++;} }
+      state.calCursor[actId] = { y, m };
+      render(); return;
+    }
+    const calDay = t.closest('[data-cal-day]');
+    if(calDay && !calDay.disabled){
+      handleCalendarDayClick(calDay.dataset.calActivity, calDay.dataset.calDay);
+      return;
+    }
+
+
+    const toggleCollapse = t.closest('[data-toggle-collapse]');
+    if(toggleCollapse && !t.closest('[data-delete-person]')){ togglePersonCollapsed(toggleCollapse.dataset.toggleCollapse); return; }
+
+    const delBtn = t.closest('[data-delete-person]');
+    if(delBtn){ e.stopPropagation(); deletePerson(delBtn.dataset.deletePerson); return; }
+
+    if(t.id === 'addPersonBtn'){ addPerson(); return; }
+
+    const applySaved = t.closest('[data-apply-saved]');
+    if(applySaved){ applySavedDetails(applySaved.dataset.applySaved); return; }
+
+
+    if(t.id === 'previewEmailBtn'){
+      showModal(`
+        <button class="icon-btn modal-close-float" onclick="closeModal()" aria-label="Close" tr="✕">✕</button>
+        ${buildResumeHtml('Confirmation is pending', 'warn')}
+      `);
+      return;
+    }
+    if(t.id === 'startOverBtn'){
+      state.selectedActivityIds = []; state.bookingActivities = []; state.sameAsFirst = true;
+      state.mainContact = emptyPerson(true); state.people = [emptyPerson(false)];
+      state.clientAssignments = {}; state.collapsed = {}; state.bookingCode = null;
+      state.step = 0; state.furthestStepReached = 0;
+      render(); return;
+    }
+  });
+
+  // ---- INPUT (live typing — update state + light style only) ----
+  document.addEventListener('input', (e)=>{
+    const t = e.target;
+    if(t.matches('[data-person-field]')){
+      updatePersonField(t.dataset.person, t.dataset.personField, t.value);
+      refreshPersonCardStyle(t.dataset.person);
+    } else if(t.matches('[data-contact-field]') && t.tagName !== 'SELECT'){
+      updateContactField(t.dataset.contactField, t.value);
+      refreshMainContactCardStyle();
+    }
+  });
+
+  // ---- FOCUSOUT (commit — full re-render, safe since focus left) ----
+  document.addEventListener('focusout', (e)=>{
+    const t = e.target;
+    if(t.matches('input[data-email-blur]')){
+      checkClientHistory(t.dataset.emailBlur, t.value.trim());
+      return;
+    }
+    if(t.matches('[data-person-field]') || t.matches('[data-contact-field]')){
+      render();
+    }
+  }, true);
+
+  // ---- CHANGE (selects, checkboxes, radios, dates) ----
+  document.addEventListener('change', (e)=>{
+    const t = e.target;
+
+    if(t.id === 'sameAsFirst'){ onToggleSameAsFirst(t.checked); return; }
+
+    if(t.matches('[data-dob-unit]')){
+      const row = t.closest('.dob-row');
+      const day = row.querySelector('[data-dob-unit="day"]').value;
+      const month = row.querySelector('[data-dob-unit="month"]').value;
+      const year = row.querySelector('[data-dob-unit="year"]').value;
+      const iso = composeDob(year, month, day);
+      const target = t.hasAttribute('data-dob-person')
+        ? state.people.find(x=>x.id===t.dataset.dobPerson)
+        : state.mainContact;
+      if(target){
+        target.dobDay = day; target.dobMonth = month; target.dobYear = year;
+        target.dob = iso;
+        if(t.hasAttribute('data-dob-person')){
+          const idx = state.people.indexOf(target);
+          if(idx===0 && state.sameAsFirst) Object.assign(state.mainContact, contactFieldsOf(target));
+        } else if(state.sameAsFirst && state.people[0]){
+          Object.assign(state.people[0], contactFieldsOf(state.mainContact));
+        }
+      }
+      render(); return;
+    }
+
+    if(t.matches('[data-person-field]')){
+      updatePersonField(t.dataset.person, t.dataset.personField, t.value);
+      render(); return;
+    }
+    if(t.matches('[data-contact-field]')){
+      updateContactField(t.dataset.contactField, t.value);
+      render(); return;
+    }
+    if(t.matches('[data-needs-rental]')){
+      const p = state.people.find(x=>x.id===t.closest('[data-person-card]').dataset.personCard);
+      if(p) p.needsRental = t.dataset.needsRental === 'yes';
+      render(); return;
+    }
+    if(t.matches('[data-know-sizes]')){
+      const p = state.people.find(x=>x.id===t.closest('[data-person-card]').dataset.personCard);
+      if(p){
+        p.knowSizes = t.dataset.knowSizes === 'yes';
+        if(!p.knowSizes){ ['bcd','wetsuit','fins'].forEach(k=>resetEquipItemSize(p,k)); }
+      }
+      render(); return;
+    }
+    if(t.matches('[data-own-regulator]')){
+      const p = state.people.find(x=>x.id===t.closest('[data-person-card]').dataset.personCard);
+      if(p){ p.ownRegulatorBrought = t.checked; if(t.checked) p.items.regulator.checked = false; }
+      render(); return;
+    }
+    if(t.matches('[data-din-regulator]')){
+      const p = state.people.find(x=>x.id===t.closest('[data-person-card]').dataset.personCard);
+      if(p) p.ownRegulatorIsDIN = t.checked;
+      render(); return;
+    }
+    if(t.matches('[data-equip-check]')){
+      const personId = t.dataset.person, key = t.dataset.equipCheck;
+      const p = state.people.find(x=>x.id===personId);
+      if(p){ p.items[key].checked = t.checked; if(!t.checked) resetEquipItemSize(p,key); }
+      render(); return;
+    }
+    if(t.matches('[data-equip-size]')){
+      const personId = t.dataset.person, key = t.dataset.equipSize;
+      const p = state.people.find(x=>x.id===personId);
+      if(p){ p.items[key].size = t.value; if(t.value) p.items[key].checked = true; }
+      render(); return;
+    }
+    if(t.matches('[data-assign-activity]')){
+      toggleClientAssignment(t.dataset.assignActivity, t.dataset.assignPerson); return;
+    }
+    if(t.matches('[data-person-field="height"], [data-person-field="weight"], [data-person-field="heightUnit"], [data-person-field="weightUnit"]')){
+      updatePersonField(t.dataset.person, t.dataset.personField, t.value);
+      refreshPersonCardStyle(t.dataset.person);
+      return;
+    }
+  });
+}
+
+function attachStepHandlers(){ /* no-op: listeners are delegated globally via initGlobalListeners() */ }
+
+/* =======================================================================
+   INIT
+   ======================================================================= */
+async function init(){
+  const { activities, availability, settings } = await loadCatalog();
+  state.activities = activities;
+  state.availability = availability;
+  state.settings = settings;
+
+  const draft = await storeGet('hidrosfera:draft', false);
+  if(draft){
+    Object.assign(state, {
+      pageLanguage: draft.pageLanguage ?? state.pageLanguage,
+      selectedActivityIds: draft.selectedActivityIds ?? [],
+      bookingActivities: draft.bookingActivities ?? [],
+      sameAsFirst: draft.sameAsFirst ?? true,
+      mainContact: draft.mainContact ?? state.mainContact,
+      people: (draft.people && draft.people.length) ? draft.people : state.people,
+      clientAssignments: draft.clientAssignments ?? {},
+      furthestStepReached: draft.furthestStepReached ?? 0,
+    });
+  }
+
+  initGlobalListeners();
+
+  // If arriving from the experience-detail-template page with ?activity=ID,
+  // pre-select that activity on the grid.
+  try{
+    const params = new URLSearchParams(window.location.search);
+    const preselect = params.get('activity');
+    if(preselect && state.activities.some(a=>a.id===preselect) && !state.selectedActivityIds.includes(preselect)){
+      state.selectedActivityIds.push(preselect);
+    }
+  } catch(e){}
+
+  render();
+}
+init();
+
+/* =====================================================================
+   ---------------------------------------------------------------------
+   OUT-OF-SCOPE INTEGRATION NOTES (for the developer wiring this up)
+   ---------------------------------------------------------------------
+   1. REAL EMAIL SENDING
+      This prototype never sends real email — "sending" is simulated
+      via the "Preview the email we sent" modal, which reuses the same
+      legal-size template. To send for real:
+        a. Stand up a tiny backend endpoint (Cloudflare Worker, AWS
+           Lambda, or a Node/Express route) that accepts a booking
+           payload and calls a transactional email API — Postmark,
+           Resend, or SendGrid all support raw HTML bodies.
+        b. On confirm, POST the `booking` object (see
+           handleConfirmBooking) to that endpoint instead of / in
+           addition to writing to storage.
+        c. Server-side, render the SAME legal-sheet HTML (export
+           buildResumeHtml as a shared template — e.g. a .ejs/.hbs
+           file, or just reuse this JS in a Node context) into the
+           email body. Add a "View this booking online" link pointing
+           to a hosted, shareable version of the review page. No
+           attachments, per the spec — just inline HTML + that link.
+        d. Two sends are needed: (1) on customer submit → subject
+           line should reflect "Confirmation is pending" status
+           (already the first line of the template); (2) on admin
+           confirm (phase 2 admin panel) → re-send with status
+           "Confirmed" and, if a deposit was taken, an amount-due
+           line reflecting the deposit.
+        e. Never call the email API directly from this browser code
+           — API keys can't be kept secret client-side.
+
+   2. REAL DATABASE
+      `window.storage` (used here for activities/availability/clients/
+      bookings) is a convenient mock database scoped to this artifact.
+      For production, replace storeGet/storeSet with calls to a real
+      database (Postgres/Supabase/Firebase all work well) behind the
+      same backend endpoint from note 1. The data shapes used here
+      (see SEED_ACTIVITIES, the `booking` object in
+      handleConfirmBooking, and the `clients` map) are meant to map
+      directly onto real tables: activities, availability_blocks,
+      bookings, booking_people, clients, client_visit_history.
+
+   3. ADMIN PANEL (phase 2 — not built in this file)
+      Already wired for it: activities/availability/settings are read
+      from shared storage keys (SK.activities, SK.availability,
+      SK.settings) with seed data written once. An admin UI can simply
+      read/write those same keys (add/edit/deactivate activities, set
+      per-date availability per activity, set the notification email)
+      and this customer-facing app will pick up changes on next load.
+      Booking status changes, deposits, calendar view, the client CRM,
+      birthday reminders, discounts UI, and payments dashboard all
+      read from SK.bookings / SK.clients the same way.
+
+   4. PASSWORD-PROTECTED ADMIN AREA
+      Do this server-side (e.g. a login route issuing a signed
+      session cookie / JWT), not with a client-side password check —
+      a password compared in browser JS is trivially bypassed by
+      reading the page source.
+   ===================================================================== */
+
+function handleBookClick(){
+  // Move selected activities into the "booking" set (step 2 works off this),
+  // preserving any dates already chosen for activities kept from before.
+  const existingByOldId = {}; state.bookingActivities.forEach(b=> existingByOldId[b.activityId]=b);
+  state.bookingActivities = state.selectedActivityIds.map(id=>({
+    activityId: id,
+    date: existingByOldId[id] ? existingByOldId[id].date : null,
+    endDate: existingByOldId[id] ? (existingByOldId[id].endDate || null) : null
+  }));
+  state.step = 1;
+  state.furthestStepReached = Math.max(state.furthestStepReached, 1);
+  window.scrollTo({top:0, behavior:'smooth'});
+  render();
+}
+</script>
+</body>
+</html>
