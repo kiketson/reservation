@@ -1,0 +1,2599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hidrosfera — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Public+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --deep:#0B3D4C; --deep-2:#082B36; --teal:#1C7C82; --teal-lt:#2E9AA0;
+  --sand:#EDE4D3; --sand-2:#E3D7C0; --foam:#FBFAF7; --coral:#E8734A; --coral-dk:#C85A34;
+  --ink:#10262B; --ink-soft:#4A5D61; --line:#D9CEB8;
+  --ok:#2E7D4F; --ok-bg:#E6F2EA; --warn:#B8860B; --warn-bg:#FBF3DD; --err:#C0392B; --err-bg:#FBEAE7;
+  --gray:#6B7280; --gray-bg:#EEF0F2;
+  --font-display:'Fraunces', serif; --font-body:'Public Sans', sans-serif; --font-mono:'IBM Plex Mono', monospace;
+  --radius-s:8px; --radius-m:14px; --radius-l:22px;
+  --shadow-card:0 1px 2px rgba(11,61,76,.06), 0 8px 24px rgba(11,61,76,.08);
+  --shadow-pop:0 12px 40px rgba(11,61,76,.22);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{ font-family:var(--font-body); background:var(--sand); color:var(--ink); -webkit-font-smoothing:antialiased; min-height:100vh; }
+h1,h2,h3,h4{ font-family:var(--font-display); font-weight:600; margin:0; color:var(--deep); }
+p{margin:0;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+.hidden{display:none !important;}
+.container{ max-width:1280px; margin:0 auto; padding:0 28px; }
+
+/* ---- Login gate ---- */
+.login-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg, var(--deep), var(--deep-2)); }
+.login-card{ background:var(--foam); border-radius:var(--radius-l); padding:40px; width:100%; max-width:380px; box-shadow:var(--shadow-pop); text-align:center; }
+.login-card .brand-mark{ width:44px; height:44px; margin-bottom:10px; }
+.login-card h1{ font-size:22px; margin-bottom:6px; }
+.login-card p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:22px; }
+.login-card input{ width:100%; border:1.5px solid var(--line); border-radius:var(--radius-s); padding:12px 14px; font-size:15px; margin-bottom:14px; }
+.login-card input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(28,124,130,.15); }
+.login-error{ color:var(--err); font-size:13px; margin-bottom:12px; min-height:16px; }
+.login-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:18px; line-height:1.6; }
+
+/* ---- Shell ---- */
+.masthead{ background:linear-gradient(180deg, var(--deep), var(--deep-2)); color:var(--foam); padding:18px 0; }
+.masthead .container{ display:flex; align-items:center; justify-content:space-between; }
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{ width:32px; height:32px; }
+.brand-name{ font-family:var(--font-display); font-size:19px; }
+.brand-tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--teal-lt); }
+.masthead-right{ display:flex; align-items:center; gap:16px; font-size:13px; }
+.masthead-right a, .masthead-right button{ color:var(--foam); background:none; border:1.5px solid rgba(255,255,255,.3); border-radius:999px; padding:7px 14px; font-size:12.5px; text-decoration:none; }
+.masthead-right a:hover, .masthead-right button:hover{ border-color:#fff; }
+
+.tabbar{ background:var(--foam); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:30; }
+.tabbar .container{ display:flex; gap:4px; overflow-x:auto; }
+.tab-btn{ background:none; border:none; padding:16px 18px; font-size:13.5px; font-weight:600; color:var(--ink-soft); border-bottom:3px solid transparent; white-space:nowrap; }
+.tab-btn.active{ color:var(--deep); border-bottom-color:var(--coral); }
+.tab-btn:hover{ color:var(--deep); }
+
+main{ padding:32px 0 80px; }
+.page-head{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; flex-wrap:wrap; gap:14px; }
+.page-title{ font-size:26px; }
+.page-sub{ color:var(--ink-soft); font-size:13.5px; margin-top:4px; }
+
+.card{ background:var(--foam); border-radius:var(--radius-l); box-shadow:var(--shadow-card); padding:22px; margin-bottom:20px; }
+.stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
+.stat-card{ background:var(--foam); border-radius:var(--radius-m); box-shadow:var(--shadow-card); padding:18px 20px; }
+.stat-label{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--teal); margin-bottom:6px; }
+.stat-value{ font-family:var(--font-display); font-size:26px; color:var(--deep); }
+.stat-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
+
+.btn{ border:none; border-radius:999px; padding:11px 20px; font-weight:700; font-size:13.5px; transition:transform .15s, background .2s, opacity .2s; }
+.btn:active{ transform:scale(.97); }
+.btn-primary{ background:var(--coral); color:#fff; }
+.btn-primary:hover{ background:var(--coral-dk); }
+.btn-outline{ background:transparent; color:var(--deep); border:1.5px solid var(--deep); }
+.btn-outline:hover{ background:var(--deep); color:#fff; }
+.btn-ghost{ background:none; color:var(--teal); }
+.btn-ghost:hover{ text-decoration:underline; }
+.btn-danger{ background:var(--err-bg); color:var(--err); border:1.5px solid transparent; }
+.btn-danger:hover{ background:var(--err); color:#fff; }
+.btn-sm{ padding:7px 14px; font-size:12.5px; }
+.btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+.field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.field label{ font-size:12px; font-weight:600; color:var(--ink-soft); }
+.field input, .field select, .field textarea{
+  border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-s); padding:10px 12px; font-size:14px; color:var(--ink);
+}
+.field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(28,124,130,.15); }
+.field-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+.field textarea{ min-height:70px; resize:vertical; }
+
+.badge{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; padding:4px 10px; border-radius:999px; font-weight:700; display:inline-block; }
+.badge-pending{ background:var(--warn-bg); color:var(--warn); }
+.badge-confirmed{ background:var(--ok-bg); color:var(--ok); }
+.badge-cancelled{ background:var(--err-bg); color:var(--err); }
+.badge-done{ background:var(--gray-bg); color:var(--gray); }
+
+.status-select{ font-size:13px; padding:9px 14px; border-radius:999px; border:1.5px solid transparent; font-weight:700; cursor:pointer; }
+.status-select-pending{ background:var(--warn-bg); color:var(--warn); border-color:var(--warn); }
+.status-select-confirmed{ background:var(--ok-bg); color:var(--ok); border-color:var(--ok); }
+.status-select-cancelled{ background:var(--err-bg); color:var(--err); border-color:var(--err); }
+.status-select-done{ background:var(--gray-bg); color:var(--gray); border-color:var(--gray); }
+.lg-row{ display:flex; justify-content:space-between; font-size:13.5px; padding:5px 0; border-bottom:1px dotted var(--line); gap:12px; }
+.lg-row .k{ color:var(--ink-soft); }
+.lg-row .v{ font-weight:600; text-align:right; }
+
+table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+th{ text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); padding:10px 12px; border-bottom:2px solid var(--line); white-space:nowrap; }
+td{ padding:12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+tr.table-row:hover{ background:rgba(28,124,130,.05); cursor:pointer; }
+
+.toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+.toolbar input, .toolbar select{ border:1.5px solid var(--line); border-radius:999px; padding:9px 16px; font-size:13px; background:#fff; }
+.toolbar input:focus, .toolbar select:focus{ outline:none; border-color:var(--teal); }
+
+.modal-backdrop{ position:fixed; inset:0; background:rgba(8,32,40,.55); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
+.modal-box{ background:#fff; border-radius:var(--radius-l); max-width:760px; width:100%; max-height:90vh; overflow-y:auto; padding:30px; box-shadow:var(--shadow-pop); position:relative; margin:auto; }
+.modal-close{ position:absolute; top:16px; right:16px; background:var(--sand); border:none; width:32px; height:32px; border-radius:50%; font-size:15px; color:var(--deep); }
+
+.toast{ position:fixed; top:20px; right:24px; background:var(--deep); color:#fff; padding:14px 20px; border-radius:var(--radius-s); box-shadow:var(--shadow-pop); z-index:300; font-size:14px; max-width:320px; animation:toastIn .3s ease; }
+@keyframes toastIn{ from{opacity:0; transform:translateX(20px);} to{opacity:1; transform:translateX(0);} }
+
+.checkbox-row{ display:flex; align-items:center; gap:8px; font-size:13.5px; }
+.checkbox-row input{ width:16px; height:16px; accent-color:var(--teal); }
+
+/* Calendar (bookings + availability) */
+.admin-cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.admin-cal-head button{ background:var(--sand); border:none; width:34px; height:34px; border-radius:50%; font-size:16px; color:var(--deep); }
+.admin-cal-title{ font-family:var(--font-display); font-size:20px; color:var(--deep); }
+.admin-cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.admin-cal-dow{ text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; padding-bottom:6px; }
+.admin-cal-day{ background:var(--foam); border-radius:10px; min-height:96px; padding:6px; border:1px solid var(--line); display:flex; flex-direction:column; gap:3px; }
+.admin-cal-day.out-range{ background:transparent; border:none; }
+.admin-cal-day.today{ border-color:var(--teal); box-shadow:0 0 0 2px rgba(28,124,130,.15) inset; }
+.admin-cal-daynum{ font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); }
+.admin-cal-event{ font-size:10.5px; padding:3px 6px; border-radius:5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.event-pending{ background:var(--warn-bg); color:#7a5c00; }
+.event-confirmed{ background:var(--ok-bg); color:var(--ok); }
+.event-cancelled{ background:var(--err-bg); color:var(--err); text-decoration:line-through; }
+.event-done{ background:var(--gray-bg); color:var(--gray); }
+
+@media (max-width:640px){
+  body{ overflow-x:hidden; }
+  .container{ padding:0 14px; }
+  .tabbar-inner{ padding:0 14px; }
+  .card{ padding:16px; }
+  .admin-cal-grid{ gap:3px; }
+  .admin-cal-day{ min-height:60px; padding:4px; border-radius:6px; gap:1px; }
+  .admin-cal-daynum{ font-size:9.5px; }
+  .admin-cal-event{ font-size:8px; padding:2px 3px; white-space:normal; line-height:1.15; }
+  .admin-cal-title{ font-size:15px; }
+  .admin-cal-head button{ width:28px; height:28px; font-size:14px; }
+  .modal-box{ padding:18px; max-height:94vh; border-radius:var(--radius-m); }
+  .modal-close-float{ top:10px; right:10px; }
+  .stat-grid{ grid-template-columns:1fr 1fr; }
+  table{ font-size:12px; }
+}
+
+.avail-day{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:13px; background:var(--sand); border:none; color:var(--ink); }
+.avail-day.blocked{ background:var(--err-bg); color:var(--err); text-decoration:line-through; }
+.avail-day.past{ opacity:.3; cursor:not-allowed; }
+.avail-day.out-range{ visibility:hidden; }
+
+.activity-row{ display:flex; gap:16px; align-items:center; padding:14px; border-radius:var(--radius-m); border:1px solid var(--line); margin-bottom:10px; background:#fff; flex-wrap:wrap; }
+.reorder-col{ display:flex; flex-direction:column; gap:2px; }
+.reorder-col button{ background:var(--sand); border:none; width:24px; height:20px; border-radius:4px; font-size:9px; color:var(--deep); }
+.reorder-col button:disabled{ opacity:.25; }
+.activity-row .thumb{ width:56px; height:56px; border-radius:10px; background:linear-gradient(135deg,var(--deep),var(--teal)); display:flex; align-items:center; justify-content:center; font-size:24px; color:#fff; flex-shrink:0; background-size:cover; background-position:center; }
+.activity-row .info{ flex:1; min-width:160px; }
+.activity-row .info h4{ font-size:15px; }
+.activity-row .info .meta{ font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin-top:2px; }
+.activity-row .actions{ display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+@media (max-width:640px){
+  .activity-row{ flex-direction:column; align-items:stretch; }
+  .reorder-col{ flex-direction:row; justify-content:center; }
+  .reorder-col button{ width:32px; height:26px; }
+  .activity-row .thumb{ width:100%; height:110px; }
+  .activity-row .actions{ justify-content:stretch; }
+  .activity-row .actions button{ flex:1; }
+}
+.pill-inactive{ background:var(--gray-bg); color:var(--gray); font-family:var(--font-mono); font-size:10px; padding:3px 9px; border-radius:999px; margin-left:8px; }
+
+.client-card{ padding:14px 16px; border:1px solid var(--line); border-radius:var(--radius-m); background:#fff; margin-bottom:10px; }
+.client-card h4{ font-size:14.5px; }
+.client-card .meta{ font-size:12px; color:var(--ink-soft); margin-top:4px; }
+.birthday-chip{ display:inline-flex; align-items:center; gap:8px; background:var(--warn-bg); color:#7a5c00; padding:8px 14px; border-radius:999px; font-size:13px; margin:4px 6px 4px 0; }
+
+.bar-chart{ display:flex; align-items:flex-end; gap:10px; height:180px; padding-top:10px; }
+.bar-chart-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; justify-content:flex-end; height:100%; }
+.bar-chart-bar{ width:100%; background:linear-gradient(180deg,var(--teal-lt),var(--deep)); border-radius:6px 6px 0 0; min-height:2px; }
+.bar-chart-label{ font-size:10px; color:var(--ink-soft); font-family:var(--font-mono); text-align:center; line-height:1.4; overflow-wrap:break-word; max-width:90px; }
+
+/* Year-at-a-glance mini calendars */
+.year-overview{ margin-top:26px; }
+.year-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; }
+.mini-month{ background:var(--foam); border-radius:var(--radius-m); box-shadow:var(--shadow-card); padding:14px; cursor:pointer; border:2px solid transparent; transition:box-shadow .2s ease, transform .15s ease; }
+.mini-month:hover{ box-shadow:0 10px 26px rgba(11,61,76,.18); transform:translateY(-2px); }
+.mini-month.is-active-month{ border-color:var(--coral); }
+.mini-month-title{ font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--deep); font-weight:700; margin-bottom:8px; text-align:center; }
+.mini-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.mini-dow{ font-size:8px; text-align:center; color:var(--ink-soft); }
+.mini-day{ aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:9.5px; color:var(--ink-soft); border-radius:50%; }
+.mini-day.out-range{ visibility:hidden; }
+.mini-day.has-event{ font-weight:700; }
+.mini-day.status-pending{ background:var(--warn-bg); color:#7a5c00; }
+.mini-day.status-confirmed{ background:var(--ok-bg); color:var(--ok); }
+.mini-day.status-cancelled{ background:var(--err-bg); color:var(--err); }
+.mini-day.status-done{ background:var(--gray-bg); color:var(--gray); }
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <svg class="brand-mark" viewBox="0 0 40 40" fill="none" style="margin:0 auto 12px; display:block;">
+      <circle cx="20" cy="20" r="19" stroke="#1C7C82" stroke-width="1.5"/>
+      <path d="M4 22c4-4 8 4 12 0s8-4 12 0 8 4 8 4" stroke="#E8734A" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <h1 tr="Hidrosfera Admin">Hidrosfera Admin</h1>
+    <p tr="Staff access only.">Staff access only.</p>
+    <input type="password" id="adminPasswordInput" placeholder="Password" autocomplete="current-password">
+    <div class="login-error" id="loginError"></div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%;" tr="Sign in">Sign in</button>
+    <div class="login-hint" tr="Default password: hidrosfera2026 — change it under Settings once you're in. This is a client-side gate for prototyping only; see chat for how to secure this properly with a real backend.">
+      Default password: <b>hidrosfera2026</b> — change it under Settings once you're in.<br>
+      This is a client-side gate for prototyping only; see chat for how to secure this properly with a real backend.
+    </div>
+  </div>
+</div>
+
+<div id="adminApp" class="hidden">
+  <div class="masthead">
+    <div class="container">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="19" stroke="#2E9AA0" stroke-width="1.5"/>
+          <path d="M4 22c4-4 8 4 12 0s8-4 12 0 8 4 8 4" stroke="#E8734A" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="brand-name" tr="Hidrosfera">Hidrosfera</div>
+          <div class="brand-tag" tr="Admin panel">Admin panel</div>
+        </div>
+      </div>
+      <div class="masthead-right">
+        <a href="./hidrosfera-booking.html" target="_blank" rel="noopener" tr="View booking site ↗">View booking site ↗</a>
+        <button id="logoutBtn" tr="Log out">Log out</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="container" id="tabBar"></div>
+  </div>
+
+  <main class="container" id="adminMain"></main>
+</div>
+
+<div id="toastHost"></div>
+<div id="modalHost"></div>
+
+<script>
+/* ---------------------------------------------------------------------
+   HOST COMPATIBILITY SHIM — see hidrosfera-booking.html for full notes.
+   Recreates window.storage using localStorage when not already present
+   (i.e. once hosted outside Claude.ai's sandbox), so the same code runs
+   in both places. NOTE: localStorage is per-browser, not a shared
+   database — the admin panel will only see bookings made in the same
+   browser. A real launch needs a real backend (see Settings tab notes).
+   --------------------------------------------------------------------- */
+if(!window.storage){
+  window.storage = (function(){
+    const PREFIX = 'hidrosfera_store::';
+    const keyFor = (key, shared) => PREFIX + (shared ? 'shared::' : 'private::') + key;
+    return {
+      async get(key, shared){
+        const raw = localStorage.getItem(keyFor(key, shared));
+        if(raw === null) throw new Error('Key not found: ' + key);
+        return { key, value: raw, shared: !!shared };
+      },
+      async set(key, value, shared){
+        localStorage.setItem(keyFor(key, shared), value);
+        return { key, value, shared: !!shared };
+      },
+      async delete(key, shared){
+        localStorage.removeItem(keyFor(key, shared));
+        return { key, deleted: true, shared: !!shared };
+      },
+      async list(prefix, shared){
+        const full = keyFor(prefix || '', shared);
+        const base = keyFor('', shared);
+        const keys = [];
+        for(let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          if(k && k.startsWith(full)) keys.push(k.slice(base.length));
+        }
+        return { keys, prefix, shared: !!shared };
+      }
+    };
+  })();
+}
+</script>
+<script>
+/* =====================================================================
+   HIDROSFERA — ADMIN PANEL
+   Reads/writes the SAME shared storage keys as the customer booking
+   app (hidrosfera-booking.html), so anything changed here — activities,
+   availability, booking status, discounts — is reflected there too.
+   ===================================================================== */
+const SK = {
+  activities:   'hidrosfera:activities',
+  availability: 'hidrosfera:availability',
+  clients:      'hidrosfera:clients',
+  bookings:     'hidrosfera:bookings',
+  settings:     'hidrosfera:settings'
+};
+const SESSION_KEY = 'hidrosfera:adminSession';
+
+async function storeGet(key, shared){
+  try{ const r = await window.storage.get(key, !!shared); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function storeSet(key, value, shared){
+  try{ await window.storage.set(key, JSON.stringify(value), !!shared); return true; }
+  catch(e){ console.error('storage set failed', key, e); return false; }
+}
+
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const MAX_DATE = new Date(TODAY); MAX_DATE.setMonth(MAX_DATE.getMonth() + 30);
+const SIZE_RANGE = ['XXS','XS','S','M','L','XL','XXL'];
+const FIN_CHART = {
+  Male: [
+    ['XXS','38','24.0','6'], ['XS','39','25.0','7'], ['S','40–41','25.5–26.0','7.5–8'],
+    ['M','42–43','27.0–27.5','9–9.5'], ['L','44–45','28.5–29.0','10.5–11'],
+    ['XL','46–47','30.0–30.5','12–12.5'], ['XXL','48','31.0','13']
+  ],
+  Female: [
+    ['XXS','35','22.5','4.5'], ['XS','36','23.5','5.5'], ['S','37','24.5','6.5'],
+    ['M','38','25.5','7.5'], ['L','39','26.5','8.5'],
+    ['XL','40','27.5','9.5'], ['XXL','41','28.5','10.5']
+  ]
+};
+function finSizeOptionsAdmin(gender, currentSize){
+  const table = gender === 'Female' ? FIN_CHART.Female : FIN_CHART.Male;
+  const label = gender === 'Female' ? 'Women' : 'Men';
+  return table.map(r=>{
+    const val = `${label}:${r[0]}`;
+    return `<option value="${val}" ${currentSize===val?'selected':''}>${r[0]} — EU ${r[1]} · MX ${r[2]} · US ${r[3]}</option>`;
+  }).join('');
+}
+function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function parseDate(s){ const [y,m,day] = s.split('-').map(Number); return new Date(y, m-1, day); }
+function fmtDateHuman(s){ if(!s) return ''; const d=parseDate(s); return d.toLocaleDateString('en-US',{month:'short', day:'numeric', year:'numeric'}); }
+function fmtMoney(n){ return 'MX$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function fmtTime12(t){
+  if(!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  const period = h>=12 ? 'PM' : 'AM';
+  let h12 = h % 12; if(h12===0) h12=12;
+  return `${h12}:${String(m).padStart(2,'0')} ${period}`;
+}
+function escapeAttr(s){ return String(s==null?'':s).replace(/"/g,'&quot;'); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function daysBetweenInclusive(a,b){ return Math.round((parseDate(b)-parseDate(a))/86400000)+1; }
+function fmtBaRange(act){
+  if(!act.date) return '—';
+  if(act.endDate) return `${fmtDateHuman(act.date)} → ${fmtDateHuman(act.endDate)} (${daysBetweenInclusive(act.date, act.endDate)}d)`;
+  return fmtDateHuman(act.date);
+}
+function ageFromDob(dob){
+  if(!dob) return null;
+  const d = parseDate(dob);
+  let age = TODAY.getFullYear() - d.getFullYear();
+  const m = TODAY.getMonth() - d.getMonth();
+  if(m<0 || (m===0 && TODAY.getDate()<d.getDate())) age--;
+  return age;
+}
+
+const DEFAULT_PASSWORD = 'hidrosfera2026';
+
+const TABS = [
+  { key:'calendar',   label:'Bookings Calendar' },
+  { key:'bookings',   label:'All Bookings' },
+  { key:'activities', label:'Activities &amp; Availability' },
+  { key:'clients',    label:'Clients' },
+  { key:'payments',   label:'Payments' },
+  { key:'settings',   label:'Settings' },
+];
+
+const state = {
+  tab: 'calendar',
+  activities: [],
+  availability: {},
+  bookings: [],
+  clients: {},
+  settings: {},
+  calMonth: { y: TODAY.getFullYear(), m: TODAY.getMonth() },     // bookings calendar cursor
+  availMonth: { y: TODAY.getFullYear(), m: TODAY.getMonth() },   // per-activity availability editor cursor
+  availEditingId: null,
+  bookingsFilter: { status:'all', q:'' },
+  paymentsFilter: { activityId:'all', from:'', to:'' },
+  clientsSearch: '',
+  clientsSort: { key:'lastVisit', dir:'desc' },
+  clientsLangFilter: 'all',
+  bookingDraft: null,       // deep clone of a booking while it's being edited in the modal
+  addingPaymentFor: null,   // bookingId while the "add payment" mini-form is open
+  activitiesOrderDirty: false,
+};
+
+function showToast(msg){
+  const host = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); }, 3200);
+}
+function showModal(html){
+  const host = document.getElementById('modalHost');
+  host.innerHTML = `<div class="modal-backdrop" id="modalBackdrop"><div class="modal-box">
+    <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+    ${html}
+  </div></div>`;
+  document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target.id==='modalBackdrop') closeModal(); });
+}
+function closeModal(){ document.getElementById('modalHost').innerHTML = ''; }
+
+/* ---------------------------------------------------------------------
+   AUTH
+   --------------------------------------------------------------------- */
+async function attemptLogin(){
+  const input = document.getElementById('adminPasswordInput');
+  const err = document.getElementById('loginError');
+  const settings = await storeGet(SK.settings, true) || {};
+  const pw = settings.adminPassword || DEFAULT_PASSWORD;
+  if(input.value === pw){
+    await storeSet(SESSION_KEY, { loggedIn:true }, false);
+    err.textContent = '';
+    enterApp();
+  } else {
+    err.textContent = 'Incorrect password.';
+  }
+}
+async function logout(){
+  await storeSet(SESSION_KEY, { loggedIn:false }, false);
+  document.getElementById('adminApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('adminPasswordInput').value = '';
+}
+function enterApp(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('adminApp').classList.remove('hidden');
+  renderTabs();
+  renderTab();
+}
+
+/* ---------------------------------------------------------------------
+   DATA LOADING
+   --------------------------------------------------------------------- */
+const DEFAULT_ACTIVITIES = [
+  { id:'act_whaleshark', name:'Whale Shark Snorkel', displayName:'Whale Shark Snorkel', divingType:'snorkel', category:'Snorkeling', icon:'🐋', image:null,
+    shortDesc:'Swim alongside gentle whale sharks in the plankton-rich waters off La Paz Bay.',
+    longDesc:'Whale sharks gather in La Paz Bay to feed on plankton blooms, and this trip puts you in the water alongside them with a certified guide.',
+    durationLabel:'4 hrs · morning', hours:'Departs 8:00 AM · Returns 12:00 PM', meetupTime:'08:00', price:2450, active:true, discount:null,
+    highlights:['Small groups, one guide per boat','Snorkel gear included'], included:['Round-trip boat transfer','Snorkel gear','Water & snack'], bring:['Reef-safe sunscreen'], meetingPoint:'Malecón de La Paz, dock 2.' },
+  { id:'act_sealions', name:'Sea Lion Snorkel', displayName:'Sea Lion Colony Snorkel', divingType:'snorkel', category:'Snorkeling', icon:'🦭', image:null,
+    shortDesc:'Snorkel with a playful sea lion colony at Los Islotes, part of a protected marine park.',
+    longDesc:'Los Islotes is home to one of the most accessible sea lion colonies in the world.',
+    durationLabel:'5 hrs · full morning', hours:'Departs 7:30 AM · Returns 12:30 PM', meetupTime:'07:30', price:2100, active:true, discount:{type:'percent', value:10},
+    highlights:['Two snorkel stops'], included:['Boat transfer','Snorkel gear'], bring:['Rash guard recommended'], meetingPoint:'Marina Cortez, La Paz.' },
+  { id:'act_pulmodive', name:'Pulmo Reef Dive', displayName:'Two-Tank Reef Dive — Cabo Pulmo', divingType:'scuba', category:'Diving', icon:'🤿', image:null,
+    shortDesc:'Two-tank certified dive on the living coral reef of Cabo Pulmo National Park.',
+    longDesc:'Cabo Pulmo protects one of the oldest living reefs in the Gulf of California.',
+    durationLabel:'6 hrs · full day', hours:'Departs 7:00 AM · Returns 2:00 PM', meetupTime:'07:00', price:3600, active:true, discount:null,
+    highlights:['Two guided tank dives'], included:['Tanks & weights','Dive guide'], bring:['Certification card'], meetingPoint:'Cabo Pulmo dive shop.' },
+  { id:'act_kayaksunset', name:'Sunset Kayak & Bioluminescence', category:'Kayaking', icon:'🛶', image:null,
+    shortDesc:'Paddle a calm bay at sunset, then watch the water glow with bioluminescent plankton.',
+    longDesc:'A gentle paddle through a sheltered bay timed to catch the sunset, followed by bioluminescence once it is fully dark.',
+    durationLabel:'3 hrs · evening', hours:'Departs 6:00 PM · Returns 9:00 PM', meetupTime:'18:00', price:1350, active:true, discount:null,
+    highlights:['Beginner-friendly'], included:['Kayak & paddle','Guide'], bring:['Light jacket'], meetingPoint:'Playa El Tecolote.' },
+  { id:'act_fishing', name:'Sport Fishing — Dorado & Marlin', category:'Fishing', icon:'🎣', image:null,
+    shortDesc:'Half-day offshore sport fishing charter chasing dorado, marlin and yellowfin tuna.',
+    longDesc:'A half-day offshore charter targeting whatever is running that season.',
+    durationLabel:'6 hrs · half day', hours:'Departs 6:30 AM · Returns 12:30 PM', meetupTime:'06:30', price:5200, active:true, discount:null,
+    highlights:['Licensed captain & mate'], included:['Rods, reels & bait','Fishing license'], bring:['Sunscreen & hat'], meetingPoint:'Marina Cabo San Lucas.' },
+  { id:'act_bluewhale', name:'Blue Whale Watching — Loreto', category:'Whale Watching', icon:'🐳', image:null,
+    shortDesc:'Seasonal encounters with the largest animal on Earth in the calm waters of Loreto Bay.',
+    longDesc:'Loreto Bay is a seasonal feeding ground for blue whales.',
+    durationLabel:'4 hrs · morning', hours:'Departs 8:30 AM · Returns 12:30 PM', meetupTime:'08:30', price:2800, active:true, discount:null,
+    highlights:['Seasonal (Jan–Apr)'], included:['Boat transfer','Naturalist guide'], bring:['Warm layer'], meetingPoint:'Loreto public pier.' },
+  { id:'act_discoverscuba', name:'Discover Scuba', displayName:'Discover Scuba Diving (Beginner)', divingType:'scuba', category:'Diving', icon:'🫧', image:null,
+    shortDesc:'No certification needed — a guided introductory dive for first-timers, pool + ocean.',
+    longDesc:'A confined-water briefing followed by a shallow, guided ocean dive.',
+    durationLabel:'4 hrs · morning', hours:'Departs 9:00 AM · Returns 1:00 PM', meetupTime:'09:00', price:2200, active:true, discount:null,
+    highlights:['No certification required'], included:['All gear','Instructor'], bring:['Swimsuit & towel'], meetingPoint:'Hidrosfera dive center.' },
+  { id:'act_mobula', name:'Mobula Snorkel', displayName:'Snorkel with Mobula Rays', divingType:'snorkel', category:'Snorkeling', icon:'🐟', image:null,
+    shortDesc:'Snorkel among migrating schools of mobula rays as they leap and glide near the surface.',
+    longDesc:'During migration season, mobula rays gather in huge schools near the surface.',
+    durationLabel:'3.5 hrs · morning', hours:'Departs 8:00 AM · Returns 11:30 AM', meetupTime:'08:00', price:1950, active:true, discount:{type:'amount', value:200},
+    highlights:['Seasonal migration event'], included:['Boat transfer','Snorkel gear'], bring:['Reef-safe sunscreen'], meetingPoint:'Marina Cortez, La Paz.' },
+];
+
+async function loadAll(){
+  state.activities = await storeGet(SK.activities, true) || [];
+  if(state.activities.length === 0){
+    // First time anything has touched shared storage — seed the same
+    // default catalog the booking site uses, so this panel works even
+    // if opened before the booking site has ever loaded.
+    state.activities = DEFAULT_ACTIVITIES;
+    await storeSet(SK.activities, state.activities, true);
+  }
+  state.availability = await storeGet(SK.availability, true) || {};
+  state.bookings = await storeGet(SK.bookings, true) || [];
+  state.clients = await storeGet(SK.clients, true) || {};
+  state.settings = await storeGet(SK.settings, true) || { notifyEmail:'reservations@hidrosfera.mx', paymentAccounts:['Cash','Bank transfer — BBVA','Bank transfer — Santander','PayPal'] };
+  if(!state.settings.paymentAccounts) state.settings.paymentAccounts = ['Cash','Bank transfer'];
+  if(!state.settings.equipmentPricing) state.settings.equipmentPricing = { bcd:150, computer:100, fins:60, mask:40, regulator:120, wetsuit:150, fullSetPrice:450 };
+}
+function activityById(id){ return state.activities.find(a=>a.id===id); }
+
+/* ---------------------------------------------------------------------
+   TAB SHELL
+   --------------------------------------------------------------------- */
+function renderTabs(){
+  const bar = document.getElementById('tabBar');
+  bar.innerHTML = TABS.map(t=>`<button class="tab-btn ${state.tab===t.key?'active':''}" data-tab="${t.key}" tr="${t.label.replace(/&amp;/,'&')}">${t.label}</button>`).join('');
+}
+function switchTab(key){ state.tab = key; renderTabs(); renderTab(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function renderTab(){
+  const main = document.getElementById('adminMain');
+  const renderers = {
+    calendar: renderCalendarTab,
+    bookings: renderBookingsTab,
+    activities: renderActivitiesTab,
+    clients: renderClientsTab,
+    payments: renderPaymentsTab,
+    settings: renderSettingsTab,
+  };
+  main.innerHTML = renderers[state.tab] ? renderers[state.tab]() : '';
+}
+
+/* =======================================================================
+   BOOKINGS CALENDAR TAB
+   ======================================================================= */
+function shortContactName(fullName){
+  if(!fullName || !fullName.trim()) return 'Guest';
+  const parts = fullName.trim().split(/\s+/);
+  if(parts.length === 1) return parts[0];
+  const initials = parts.slice(1).map(p=>p[0].toUpperCase()+'.').join('');
+  return `${parts[0]} ${initials}`;
+}
+function bookingContactName(b){
+  return (b.mainContact && b.mainContact.fullName) || (b.people[0] && b.people[0].fullName) || 'Guest';
+}
+function getBookingEvents(){
+  const events = [];
+  state.bookings.forEach(b=>{
+    const contact = bookingContactName(b);
+    (b.activities||[]).forEach(act=>{
+      const a = activityById(act.activityId);
+      events.push({
+        bookingId: b.id, bookingCode: b.bookingCode, status: b.status,
+        date: act.date, endDate: act.endDate,
+        activityName: a ? a.name : 'Unknown experience', activityIcon: a ? a.icon : '❓',
+        contact, peopleCount: (act.assignedPersonIds||b.people.map(p=>p.id)).length
+      });
+    });
+  });
+  return events;
+}
+
+function renderCalendarTab(){
+  const { y, m } = state.calMonth;
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const monthLabel = first.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  const events = getBookingEvents();
+
+  let cells = '';
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  cells += dows.map(d=>`<div class="admin-cal-dow" tr="${d}">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) cells += `<div class="admin-cal-day out-range"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(y,m,d);
+    const iso = fmtDate(dateObj);
+    const isToday = iso === fmtDate(TODAY);
+    const dayEvents = events.filter(e => iso >= e.date && iso <= (e.endDate || e.date));
+    cells += `<div class="admin-cal-day ${isToday?'today':''}">
+      <div class="admin-cal-daynum">${d}</div>
+      ${dayEvents.map(e=>{
+        let suffix = '';
+        if(e.endDate && e.endDate !== e.date){
+          if(iso === e.date) suffix = ' →';
+          else if(iso === e.endDate) suffix = ' ←';
+          else suffix = ' ↔';
+        }
+        return `<div class="admin-cal-event event-${e.status}" data-open-booking="${e.bookingId}" title="${escapeAttr(e.activityName)} — ${escapeAttr(e.contact)}">
+        ${e.activityIcon} ${escapeHtml(shortContactName(e.contact))} · ${e.peopleCount}p${suffix}
+      </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="Bookings calendar">Bookings calendar</div>
+      <div class="page-sub" tr="Yellow = pending · Green = confirmed · Red = cancelled · Gray = done. Click any booking to open it.">Yellow = pending · Green = confirmed · Red = cancelled · Gray = done. Click any booking to open it.</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="admin-cal-head">
+      <button data-admin-cal-nav="prev" aria-label="Previous month">‹</button>
+      <div class="admin-cal-title">${monthLabel}</div>
+      <button data-admin-cal-nav="next" aria-label="Next month">›</button>
+    </div>
+    <div class="admin-cal-grid">${cells}</div>
+  </div>
+  ${renderYearOverview(y)}`;
+}
+
+/* ---- Year-at-a-glance strip: every day gets a filled circle in the
+   same status colors as the big calendar; clicking a month jumps the
+   big calendar above to that month. ---------------------------------- */
+function buildDayStatusMap(year){
+  const priority = { pending:4, confirmed:3, cancelled:2, done:1 };
+  const map = {};
+  getBookingEvents().forEach(e=>{
+    const start = parseDate(e.date);
+    const end = e.endDate ? parseDate(e.endDate) : start;
+    let cur = new Date(start);
+    while(cur <= end){
+      if(cur.getFullYear() === year){
+        const iso = fmtDate(cur);
+        if(!map[iso] || priority[e.status] > priority[map[iso]]) map[iso] = e.status;
+      }
+      cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate()+1);
+    }
+  });
+  return map;
+}
+function renderYearOverview(year){
+  const dayStatusMap = buildDayStatusMap(year);
+  const months = Array.from({length:12}, (_,m)=>{
+    const first = new Date(year, m, 1);
+    const startDow = first.getDay();
+    const daysInMonth = new Date(year, m+1, 0).getDate();
+    const monthName = first.toLocaleDateString('en-US', {month:'short'});
+    let cells = '';
+    const dows = ['S','M','T','W','T','F','S'];
+    cells += dows.map(d=>`<div class="mini-dow">${d}</div>`).join('');
+    for(let i=0;i<startDow;i++) cells += `<div class="mini-day out-range"></div>`;
+    for(let d=1; d<=daysInMonth; d++){
+      const iso = fmtDate(new Date(year,m,d));
+      const status = dayStatusMap[iso];
+      cells += `<div class="mini-day ${status?'has-event status-'+status:''}">${d}</div>`;
+    }
+    const isActive = year === state.calMonth.y && m === state.calMonth.m;
+    return `<div class="mini-month ${isActive?'is-active-month':''}" data-year-nav-month="${m}" data-year-nav-year="${year}" title="Jump to ${monthName} ${year}">
+      <div class="mini-month-title">${monthName}</div>
+      <div class="mini-grid">${cells}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="year-overview">
+    <div class="page-head" style="margin-bottom:14px;">
+      <div>
+        <h3 tr="${year} at a glance">${year} at a glance</h3>
+        <div class="stat-sub" tr="Click a month to jump the calendar above.">Click a month to jump the calendar above.</div>
+      </div>
+      <div class="admin-cal-head" style="gap:4px;">
+        <button data-year-overview-nav="prev" aria-label="Previous year">‹</button>
+        <div class="admin-cal-title" style="font-size:16px;">${year}</div>
+        <button data-year-overview-nav="next" aria-label="Next year">›</button>
+      </div>
+    </div>
+    <div class="year-grid">${months}</div>
+  </div>`;
+}
+
+function adminUnitPrice(a){
+  if(!a || !a.discount) return a ? a.price : 0;
+  return a.discount.type==='percent' ? Math.round(a.price*(1-a.discount.value/100)) : Math.max(0, a.price-a.discount.value);
+}
+function adminDaysBetween(startISO, endISO){
+  if(!startISO) return 1;
+  if(!endISO || endISO === startISO) return 1;
+  return Math.round((parseDate(endISO) - parseDate(startISO)) / 86400000) + 1;
+}
+function adminPerPersonPrice(a, act){
+  if(!a) return 0;
+  const days = adminDaysBetween(act.date, act.endDate);
+  let total = adminUnitPrice(a) * days;
+  if(a.multiDayDiscount && a.multiDayDiscount.minDays && days >= a.multiDayDiscount.minDays){
+    const md = a.multiDayDiscount;
+    total = md.type==='percent' ? Math.round(total*(1-md.value/100)) : Math.max(0, total-md.value);
+  }
+  return total;
+}
+function activityDisplayName(a){ return (a && (a.displayName || a.name)) || 'Unknown experience'; }
+function computeSuggestedDeposit(total){ return Math.round(Math.min((total||0) * 0.15, 4000)); }
+function bookingCollected(b){
+  return (b.payments||[]).reduce((s,p)=>{
+    const amt = Number(p.amount)||0;
+    return s + (p.type === 'refund' ? -amt : amt);
+  }, 0);
+}
+function bookingRemaining(b){ return Math.max(0, (bookingTotalAfterDiscount(b)||0) - bookingCollected(b)); }
+function bookingTotalAfterDiscount(b){
+  const base = (b.priceOverride!=null && b.priceOverride!=='') ? Number(b.priceOverride) : b.total;
+  if(!b.discount) return base;
+  return b.discount.type === 'percent' ? Math.round(base * (1 - b.discount.value/100)) : Math.max(0, base - b.discount.value);
+}
+
+function openBookingDetail(bookingId){
+  state.bookingDraft = null;
+  state.addingPaymentFor = null;
+  showModal(renderBookingModal(bookingId));
+}
+function refreshBookingModal(bookingId){
+  showModal(renderBookingModal(bookingId));
+}
+function renderBookingModal(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return '<p>Booking not found.</p>';
+  if(state.bookingDraft && state.bookingDraft.id === bookingId) return buildBookingEditHtml(state.bookingDraft);
+  return buildBookingViewHtml(b);
+}
+
+function formatFinSizeAdmin(val){
+  if(!val) return '';
+  const [label, code] = val.split(':');
+  const table = label === 'Women' ? FIN_CHART.Female : FIN_CHART.Male;
+  const row = table.find(r=>r[0]===code);
+  if(!row) return val;
+  return `${label} ${code} — EU ${row[1]} · MX ${row[2]} · US ${row[3]}`;
+}
+function equipmentSummaryLineAdmin(p){
+  if(!p.items) return '—';
+  const labels = { bcd:'BCD', computer:'Dive computer', fins:'Fins', mask:'Mask', regulator:'Regulator', wetsuit:'Wetsuit' };
+  const parts = Object.keys(labels).map(key=>{
+    const it = p.items[key];
+    if(!it) return null;
+    if(!it.mode){
+      // Legacy shape from before the rent/own redesign (checked+size only).
+      if(!it.checked) return null;
+      const bits = ['Rental'];
+      if(it.size) bits.push(key==='fins' ? formatFinSizeAdmin(it.size) : it.size);
+      return `${labels[key]} (${bits.join(' · ')})`;
+    }
+    const bits = [it.mode==='own' ? 'Own' : 'Rental'];
+    if(key==='fins' && it.size) bits.push(formatFinSizeAdmin(it.size));
+    else if(it.size === 'unknown'){
+      const hw = p.heightWeight;
+      if(hw && (hw.height||hw.weight)) bits.push(`H/W: ${hw.height}${hw.heightUnit||''} / ${hw.weight}${hw.weightUnit||''}`);
+      else bits.push('size unknown');
+    }
+    else if(it.size) bits.push(it.size);
+    else if(it.knowSize===false && (it.height||it.weight)) bits.push(`H/W: ${it.height}${it.heightUnit||''} / ${it.weight}${it.weightUnit||''}`); // legacy per-item H/W
+    if(key==='wetsuit' && it.thickness) bits.push(it.thickness);
+    if(key==='regulator' && it.mode==='own' && it.isDIN) bits.push('DIN');
+    if(it.brand || it.model) bits.push([it.brand,it.model].filter(Boolean).join(' '));
+    return `${labels[key]} (${bits.join(' · ')})`;
+  }).filter(Boolean);
+  if(p.estimatedWeight && p.estimatedWeight.amount) parts.push(`Est. weight: ${p.estimatedWeight.amount}${p.estimatedWeight.unit||'kg'}`);
+  if(p.weightsUsed){
+    if(typeof p.weightsUsed === 'object' && p.weightsUsed.amount) parts.push(`Weights used: ${p.weightsUsed.amount}${p.weightsUsed.unit||'kg'}`);
+    else if(typeof p.weightsUsed === 'string') parts.push(`Weights used: ${p.weightsUsed}`); // legacy free-text fallback
+  }
+  if(p.nitrox) parts.push('Nitrox');
+
+  const extras = [];
+  const oe = p.ownEquipment;
+  if(oe){
+    if(oe.bcd && (oe.bcd.size||oe.bcd.brand||oe.bcd.model)) extras.push('BCD: '+[oe.bcd.brand,oe.bcd.model,oe.bcd.size].filter(Boolean).join(' / '));
+    if(oe.fins && (oe.fins.size||oe.fins.brand||oe.fins.model)) extras.push('Fins: '+[oe.fins.brand,oe.fins.model, oe.fins.size?formatFinSizeAdmin(oe.fins.size):''].filter(Boolean).join(' / '));
+    if(oe.wetsuit && (oe.wetsuit.size||oe.wetsuit.brand||oe.wetsuit.model)) extras.push('Wetsuit: '+[oe.wetsuit.brand,oe.wetsuit.model,oe.wetsuit.size].filter(Boolean).join(' / '));
+    if(oe.mask && (oe.mask.brand||oe.mask.model)) extras.push('Mask: '+[oe.mask.brand,oe.mask.model].filter(Boolean).join(' / '));
+    if(oe.regulator && (oe.regulator.type||oe.regulator.brand||oe.regulator.model)) extras.push('Regulator: '+[oe.regulator.type,oe.regulator.brand,oe.regulator.model].filter(Boolean).join(' / '));
+    // Legacy single-blob shape from before the per-item redesign.
+    if(!oe.bcd && !oe.fins && !oe.wetsuit && !oe.mask && !oe.regulator && (oe.size||oe.brand||oe.model)){
+      extras.push('Note: ' + [oe.brand, oe.model, oe.size].filter(Boolean).join(' / '));
+    }
+  }
+  const base = parts.length ? parts.join(', ') : '—';
+  return extras.length ? (base + ' — Admin notes: ' + extras.join('; ')) : base;
+}
+
+/* ---- VIEW MODE ---- */
+function buildBookingViewHtml(b){
+  const activitiesHtml = (b.activities||[]).map((act)=>{
+    const a = activityById(act.activityId);
+    const names = (act.assignedPersonIds||[]).map(id=>{ const p=b.people.find(x=>x.id===id); return p?p.fullName||'Traveler':''; }).filter(Boolean).join(', ');
+    return `<div class="card" style="padding:14px 16px; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between; font-weight:600; font-size:14px; gap:10px; flex-wrap:wrap; align-items:center;">
+        <span>${a?a.icon:'❓'} ${escapeHtml(activityDisplayName(a))}</span>
+        <span style="font-family:var(--font-mono); font-size:12.5px; color:var(--ink-soft);">${fmtBaRange(act)}</span>
+      </div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">${escapeHtml(names||'—')}</div>
+    </div>`;
+  }).join('');
+
+  const peopleHtml = b.people.map((p,i)=>`
+    <div class="card table-row" data-open-traveler="${b.id}" data-person-index="${i}" style="padding:14px 16px; margin-bottom:8px; cursor:pointer;">
+      <div style="font-weight:600; font-size:14px;">${escapeHtml(p.fullName || 'Traveler '+(i+1))} <span style="font-weight:400; font-size:12px; color:var(--ink-soft);">${p.gender||''} ${ageFromDob(p.dob)!=null ? '· '+ageFromDob(p.dob)+'y' : ''}</span></div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">Allergies/dietary: ${escapeHtml(p.allergies||'—')}</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">Rental: ${escapeHtml(equipmentSummaryLineAdmin(p))}</div>
+      ${p.notes ? `<div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">Notes: ${escapeHtml(p.notes)}</div>` : ''}
+    </div>`).join('');
+
+  const isLocked = b.status === 'done';
+  const suggested = computeSuggestedDeposit(bookingTotalAfterDiscount(b));
+  const firstAct = (b.activities||[])[0];
+  const firstActActivity = firstAct ? activityById(firstAct.activityId) : null;
+  const tripMeta = [
+    firstAct ? fmtBaRange(firstAct) : '',
+    (firstActActivity && firstActActivity.meetupTime) ? 'Meets ' + fmtTime12(firstActActivity.meetupTime) : '',
+    '#' + b.bookingCode
+  ].filter(Boolean).join(' · ');
+
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; padding-right:34px; flex-wrap:wrap; gap:10px;">
+      <div>
+        <h3>${escapeHtml(bookingContactName(b))}</h3>
+        <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">${tripMeta}</div>
+      </div>
+      <span class="badge badge-${b.status}">${b.status}</span>
+    </div>
+
+    ${isLocked ? `<div class="card" style="background:var(--gray-bg); margin-bottom:16px;"><p style="font-size:13px; color:var(--gray); margin:0;">This booking is marked done and can no longer be modified.</p></div>` : ''}
+
+    <div class="field-grid" style="margin-bottom:18px;">
+      <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Main contact</div><div style="font-weight:600;">${escapeHtml(bookingContactName(b))}</div></div>
+      <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Email</div><div>${escapeHtml((b.mainContact&&b.mainContact.email)||'—')}</div></div>
+      <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Language</div><div>${(b.pageLanguage||'en').toUpperCase()}</div></div>
+    </div>
+
+    <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin-bottom:8px;">Activities</div>
+    ${activitiesHtml}
+
+    <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin:16px 0 8px;">Travelers</div>
+    ${peopleHtml}
+
+    <div style="margin-top:18px;">
+      <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin-bottom:8px;">Pricing adjustments for this reservation</div>
+      <div class="field-grid" style="margin-bottom:10px;">
+        <div class="field" style="margin-bottom:0;"><label>Manual price override (optional)</label><input type="number" min="0" id="bookingPriceOverride" placeholder="Leave blank to use the calculated total" value="${b.priceOverride!=null?b.priceOverride:''}" ${isLocked?'disabled':''}></div>
+      </div>
+      <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Use this to correct the total — e.g. if the equipment rental (including the 5+ item full-set rate) needs a manual adjustment for this specific reservation. It replaces the calculated total before the discount below is applied.</p>
+      <div class="field-grid" style="margin-bottom:14px;">
+        <div class="field" style="margin-bottom:0;"><label>Discount type</label>
+          <select id="bookingDiscountType" ${isLocked?'disabled':''}>
+            <option value="">No discount</option>
+            <option value="percent" ${b.discount&&b.discount.type==='percent'?'selected':''}>Percent (%)</option>
+            <option value="amount" ${b.discount&&b.discount.type==='amount'?'selected':''}>Fixed amount (MX$)</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Discount value</label><input type="number" min="0" id="bookingDiscountValue" value="${b.discount?b.discount.value:0}" ${isLocked?'disabled':''}></div>
+        ${!isLocked ? `<button class="btn btn-outline btn-sm" style="align-self:end;" data-save-booking-discount="${b.id}">Save pricing</button>` : ''}
+      </div>
+
+      <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin-bottom:8px;">Payments</div>
+      <div class="field-grid" style="margin-bottom:10px;">
+        <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Total due</div><div style="font-family:var(--font-display); font-size:22px; color:var(--deep);">${fmtMoney(bookingTotalAfterDiscount(b))}${(b.discount||b.priceOverride!=null)?`<div style="font-size:11px; color:var(--ink-soft); font-weight:400;">(calculated: ${fmtMoney(b.total)})</div>`:''}</div></div>
+        <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Collected so far</div><div style="font-family:var(--font-display); font-size:22px; color:var(--ok);">${fmtMoney(bookingCollected(b))}</div></div>
+        <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Remaining to pay</div><div style="font-family:var(--font-display); font-size:22px; color:${bookingRemaining(b)>0?'var(--err)':'var(--ok)'};">${fmtMoney(bookingRemaining(b))}</div></div>
+      </div>
+      <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Suggested deposit: ${fmtMoney(suggested)}</p>
+      ${(b.payments&&b.payments.length) ? `
+      <div class="card" style="padding:0; overflow-x:auto; margin-bottom:12px;">
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Account</th><th style="text-align:right;">Amount</th><th></th></tr></thead>
+          <tbody>
+            ${b.payments.map(p=>`<tr>
+              <td>${fmtDateHuman(p.date)}</td>
+              <td style="text-transform:capitalize;">${escapeHtml(p.type)}</td>
+              <td>${escapeHtml(p.account||'—')}</td>
+              <td style="text-align:right; font-family:var(--font-mono); color:${p.type==='refund'?'var(--err)':'var(--ink)'};">${p.type==='refund'?'−':''}${fmtMoney(p.amount)}</td>
+              <td style="text-align:right;">${!isLocked ? `<button class="icon-btn" data-delete-payment="${b.id}" data-payment-id="${p.id}" title="Remove this payment">✕</button>` : ''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : `<p style="font-size:13px; color:var(--ink-soft); margin-bottom:12px;">No payments recorded yet.</p>`}
+      ${!isLocked ? (state.addingPaymentFor===b.id ? `
+        <div class="card" style="background:var(--sand);">
+          <div class="field-grid">
+            <div class="field" style="margin-bottom:0;"><label>Type</label>
+              <select id="newPaymentType">
+                <option value="deposit">Deposit</option>
+                <option value="payment">Payment</option>
+                <option value="refund">Refund (money returned)</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0;"><label>Amount (MX$)</label><input type="number" min="0" id="newPaymentAmount" value="${b.payments&&b.payments.length?'':suggested}"></div>
+            <div class="field" style="margin-bottom:0;"><label>Date</label><input type="date" id="newPaymentDate" value="${fmtDate(TODAY)}"></div>
+            <div class="field" style="margin-bottom:0;"><label>Account</label>
+              <select id="newPaymentAccount">
+                ${(state.settings.paymentAccounts||[]).map(acc=>`<option value="${escapeAttr(acc)}">${escapeHtml(acc)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:12px;">
+            <button class="btn btn-primary btn-sm" data-confirm-add-payment="${b.id}">Save payment</button>
+            <button class="btn btn-outline btn-sm" data-cancel-add-payment="1">Cancel</button>
+          </div>
+        </div>
+      ` : `<button class="btn btn-outline btn-sm" data-add-payment="${b.id}">+ Add payment</button>`) : ''}
+    </div>
+
+    ${b.adminNotes ? `<div class="card" style="margin-top:18px; background:var(--sand);"><div class="section-title">Admin notes</div><p style="font-size:13.5px; white-space:pre-wrap;">${escapeHtml(b.adminNotes)}</p></div>` : ''}
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:22px; padding-top:18px; border-top:1px solid var(--line);">
+      <select id="bookingStatusSelect_${b.id}" data-change-booking-status="${b.id}" class="status-select status-select-${b.status}">
+        <option value="pending" ${b.status==='pending'?'selected':''}>Pending</option>
+        <option value="confirmed" ${b.status==='confirmed'?'selected':''}>Confirmed</option>
+        <option value="cancelled" ${b.status==='cancelled'?'selected':''}>Cancelled</option>
+        <option value="done" ${b.status==='done'?'selected':''}>Done</option>
+      </select>
+      ${!isLocked ? `<button class="btn btn-outline" data-start-edit="${b.id}">✎ Edit booking</button>` : ''}
+      <button class="btn btn-outline" data-resend-email="${b.id}">✉ Send updated version to client</button>
+      ${(b.status==='confirmed' || b.status==='done') ? `<button class="btn btn-outline" data-export-report="${b.id}">⬇ Export trip report (PDF)</button>` : ''}
+    </div>
+  `;
+}
+
+/* ---- EDIT MODE — small, direct changes right on the card: add/remove
+   travelers, add/remove experiences, change dates, edit equipment &
+   sizes. Nothing here notifies the client until Save, and separately,
+   the confirm/resend buttons back in view mode. ---- */
+function buildBookingEditHtml(draft){
+  const activitiesHtml = draft.activities.map((act,i)=>{
+    const assigned = act.assignedPersonIds || [];
+    return `
+    <div class="card" style="padding:14px 16px; margin-bottom:10px;">
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;">
+          <label>Experience</label>
+          <select data-draft-activity-field="activityId" data-activity-index="${i}">
+            ${state.activities.map(a=>`<option value="${a.id}" ${act.activityId===a.id?'selected':''}>${escapeHtml(activityDisplayName(a))}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Start date</label><input type="date" data-draft-activity-field="date" data-activity-index="${i}" value="${act.date||''}"></div>
+        <div class="field" style="margin-bottom:0;"><label>End date (optional)</label><input type="date" data-draft-activity-field="endDate" data-activity-index="${i}" value="${act.endDate||''}"></div>
+      </div>
+      <div style="margin-top:10px;">
+        <div style="font-size:11px; font-family:var(--font-mono); text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;">Travelers on this activity</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${draft.people.map(p=>`
+            <label style="display:flex; align-items:center; gap:6px; background:var(--sand); padding:5px 10px; border-radius:999px; font-size:12.5px;">
+              <input type="checkbox" data-draft-assign-activity="${i}" data-assign-person-id="${p.id}" ${assigned.includes(p.id)?'checked':''}>
+              ${escapeHtml(p.fullName||'Traveler')}
+            </label>`).join('')}
+        </div>
+      </div>
+      <button class="icon-btn" style="margin-top:8px;" data-draft-remove-activity="${i}">✕ Remove this activity</button>
+    </div>`;
+  }).join('');
+
+  const equipRow = (draft, i, key, label, kind) => {
+    const p = draft.people[i];
+    const items = p.items || {};
+    const it = items[key] || {};
+    const hasSize = kind === 'size' || kind === 'fins';
+    let sizeControl = '';
+    if(hasSize){
+      sizeControl = kind === 'fins'
+        ? `<select data-draft-eq-field="size" data-eq-item="${key}" data-person-index="${i}">
+             <option value="" ${!it.size?'selected':''}>Select size…</option>
+             ${finSizeOptionsAdmin(p.gender, it.size)}
+           </select>`
+        : `<select data-draft-eq-field="size" data-eq-item="${key}" data-person-index="${i}">
+             <option value="" ${!it.size?'selected':''}>Select size…</option>
+             ${SIZE_RANGE.map(s=>`<option value="${s}" ${it.size===s?'selected':''}>${s}</option>`).join('')}
+             <option value="unknown" ${it.size==='unknown'?'selected':''}>Unknown (see height/weight)</option>
+           </select>`;
+    }
+    return `
+    <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
+      <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">${label}</div>
+      <div style="display:flex; gap:10px; margin-bottom:6px;">
+        <label style="display:flex; align-items:center; gap:4px; font-size:11.5px;"><input type="radio" name="draft_mode_${key}_${i}" data-draft-eq-mode="rent" data-eq-item="${key}" data-person-index="${i}" ${it.mode==='rent'?'checked':''}> Rent</label>
+        <label style="display:flex; align-items:center; gap:4px; font-size:11.5px;"><input type="radio" name="draft_mode_${key}_${i}" data-draft-eq-mode="own" data-eq-item="${key}" data-person-index="${i}" ${it.mode==='own'?'checked':''}> Own</label>
+        ${key==='regulator' && it.mode==='own' ? `<label style="display:flex; align-items:center; gap:4px; font-size:11.5px;"><input type="checkbox" data-draft-eq-field="isDIN" data-eq-item="regulator" data-person-index="${i}" ${it.isDIN?'checked':''}> DIN</label>` : ''}
+      </div>
+      ${sizeControl}
+      ${key==='wetsuit' ? `<input type="text" placeholder="Thickness e.g. 3mm" data-draft-eq-field="thickness" data-eq-item="wetsuit" data-person-index="${i}" value="${escapeAttr(it.thickness||'')}" style="margin-top:6px; width:100%;">` : ''}
+      <div style="display:flex; gap:6px; margin-top:6px;">
+        <input type="text" placeholder="Brand" data-draft-eq-field="brand" data-eq-item="${key}" data-person-index="${i}" value="${escapeAttr(it.brand||'')}" style="flex:1;">
+        <input type="text" placeholder="Model" data-draft-eq-field="model" data-eq-item="${key}" data-person-index="${i}" value="${escapeAttr(it.model||'')}" style="flex:1;">
+      </div>
+    </div>`;
+  };
+
+  const peopleHtml = draft.people.map((p,i)=>`
+    <div class="card" style="padding:14px 16px; margin-bottom:10px;">
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;"><label>Full name</label><input type="text" data-draft-person-field="fullName" data-person-index="${i}" value="${escapeAttr(p.fullName||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Gender</label>
+          <select data-draft-person-field="gender" data-person-index="${i}">
+            <option value="" ${!p.gender?'selected':''}>—</option>
+            <option value="Male" ${p.gender==='Male'?'selected':''}>Male</option>
+            <option value="Female" ${p.gender==='Female'?'selected':''}>Female</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Date of birth</label><input type="date" data-draft-person-field="dob" data-person-index="${i}" value="${p.dob||''}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Allergies / dietary</label><input type="text" data-draft-person-field="allergies" data-person-index="${i}" value="${escapeAttr(p.allergies||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Email</label><input type="email" data-draft-person-field="email" data-person-index="${i}" value="${escapeAttr(p.email||'')}"></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="font-size:11px; font-family:var(--font-mono); text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;">Rental equipment &amp; sizes</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;">
+          ${equipRow(draft,i,'bcd','BCD','size')}
+          ${equipRow(draft,i,'wetsuit','Wetsuit','size')}
+          ${equipRow(draft,i,'fins','Fins','fins')}
+          ${equipRow(draft,i,'mask','Mask','plain')}
+          ${equipRow(draft,i,'regulator','Regulator','plain')}
+          ${equipRow(draft,i,'computer','Dive computer','plain')}
+        </div>
+        <div class="field-grid" style="margin-top:10px;">
+          <div class="field" style="margin-bottom:0;"><label>Height (if size unknown for BCD/wetsuit)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="number" min="0" data-draft-hw="height" data-person-index="${i}" value="${(p.heightWeight&&p.heightWeight.height)||''}" style="flex:1;">
+              <select data-draft-hw="heightUnit" data-person-index="${i}">
+                <option value="cm" ${(!p.heightWeight||p.heightWeight.heightUnit==='cm')?'selected':''}>cm</option>
+                <option value="in" ${p.heightWeight&&p.heightWeight.heightUnit==='in'?'selected':''}>in</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;"><label>Weight (if size unknown for BCD/wetsuit)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="number" min="0" data-draft-hw="weight" data-person-index="${i}" value="${(p.heightWeight&&p.heightWeight.weight)||''}" style="flex:1;">
+              <select data-draft-hw="weightUnit" data-person-index="${i}">
+                <option value="kg" ${(!p.heightWeight||p.heightWeight.weightUnit==='kg')?'selected':''}>kg</option>
+                <option value="lb" ${p.heightWeight&&p.heightWeight.weightUnit==='lb'?'selected':''}>lb</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;"><label>Weights used (admin — after the trip)</label>
+            <div style="display:flex; gap:6px;">
+              <input type="number" min="0" data-draft-weights="amount" data-person-index="${i}" value="${(p.weightsUsed&&p.weightsUsed.amount)||''}" style="flex:1;">
+              <select data-draft-weights="unit" data-person-index="${i}">
+                <option value="kg" ${(!p.weightsUsed||p.weightsUsed.unit==='kg')?'selected':''}>kg</option>
+                <option value="lb" ${p.weightsUsed&&p.weightsUsed.unit==='lb'?'selected':''}>lb</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;"><label>Nitrox</label>
+            <label style="display:flex; align-items:center; gap:6px; margin-top:8px;"><input type="checkbox" data-draft-nitrox="1" data-person-index="${i}" ${p.nitrox?'checked':''}> Requested</label>
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn" style="margin-top:10px;" data-draft-remove-person="${i}">✕ Remove this traveler</button>
+    </div>`).join('');
+
+  return `
+    <div style="padding-right:34px; margin-bottom:16px;">
+      <h3>Editing — ${escapeHtml(bookingContactName(draft))}</h3>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">Add or remove travelers, experiences, dates, or equipment sizes, then save. This doesn't notify the client — use the buttons in the booking's normal view for that.</div>
+    </div>
+
+    <div class="field-grid" style="margin-bottom:18px;">
+      <div class="field" style="margin-bottom:0;"><label>Main contact name</label><input type="text" data-draft-contact-field="fullName" value="${escapeAttr(draft.mainContact.fullName||'')}"></div>
+      <div class="field" style="margin-bottom:0;"><label>Main contact email</label><input type="email" data-draft-contact-field="email" value="${escapeAttr(draft.mainContact.email||'')}"></div>
+    </div>
+
+    <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--teal); margin-bottom:8px;">Activities</div>
+    ${activitiesHtml}
+    <button class="btn btn-outline btn-sm" data-draft-add-activity style="margin-bottom:18px;">+ Add activity</button>
+
+    <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--teal); margin:10px 0 8px;">Travelers</div>
+    ${peopleHtml}
+    <button class="btn btn-outline btn-sm" data-draft-add-person style="margin-bottom:18px;">+ Add traveler</button>
+
+    <div class="field" style="margin-top:6px;">
+      <label>Admin notes (internal — never shown to the client)</label>
+      <textarea id="draftAdminNotes" style="min-height:80px;">${escapeHtml(draft.adminNotes||'')}</textarea>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; padding-top:18px; border-top:1px solid var(--line);">
+      <button class="btn btn-primary" data-draft-save="${draft.id}">💾 Save changes</button>
+      <button class="btn btn-outline" data-draft-cancel="${draft.id}">Cancel editing</button>
+    </div>
+  `;
+}
+
+function startEditBooking(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b || b.status==='done') return;
+  state.bookingDraft = JSON.parse(JSON.stringify(b));
+  if(!state.bookingDraft.depositAccount) state.bookingDraft.depositAccount = (state.settings.paymentAccounts||[])[0] || '';
+  refreshBookingModal(bookingId);
+}
+function cancelEditBooking(bookingId){
+  state.bookingDraft = null;
+  refreshBookingModal(bookingId);
+}
+function addDraftActivity(){
+  if(!state.bookingDraft || state.activities.length===0) return;
+  const a = state.activities[0];
+  state.bookingDraft.activities.push({ activityId:a.id, date: fmtDate(TODAY), endDate:null, assignedPersonIds: state.bookingDraft.people.map(p=>p.id), unitPrice: adminUnitPrice(a) });
+  refreshBookingModal(state.bookingDraft.id);
+}
+function removeDraftActivity(idx){
+  if(!state.bookingDraft) return;
+  state.bookingDraft.activities.splice(idx,1);
+  refreshBookingModal(state.bookingDraft.id);
+}
+function addDraftPerson(){
+  if(!state.bookingDraft) return;
+  state.bookingDraft.people.push({
+    id: uid('p'), fullName:'', gender:'', dob:'', allergies:'', email:'', notes:'',
+    weightsUsed:{ amount:'', unit:'kg' }, nitrox:false,
+    items:{
+      bcd:{mode:'',knowSize:true,size:'',height:'',heightUnit:'cm',weight:'',weightUnit:'kg',brand:'',model:''},
+      computer:{mode:'',brand:'',model:''},
+      fins:{mode:'',knowSize:true,size:'',height:'',heightUnit:'cm',weight:'',weightUnit:'kg',brand:'',model:''},
+      mask:{mode:'',brand:'',model:''},
+      regulator:{mode:'',brand:'',model:'',isDIN:false},
+      wetsuit:{mode:'',knowSize:true,size:'',height:'',heightUnit:'cm',weight:'',weightUnit:'kg',brand:'',model:'',thickness:''}
+    }
+  });
+  refreshBookingModal(state.bookingDraft.id);
+}
+function removeDraftPerson(idx){
+  if(!state.bookingDraft) return;
+  const removed = state.bookingDraft.people[idx];
+  state.bookingDraft.people.splice(idx,1);
+  state.bookingDraft.activities.forEach(act=>{ act.assignedPersonIds = (act.assignedPersonIds||[]).filter(id=>id!==removed.id); });
+  refreshBookingModal(state.bookingDraft.id);
+}
+async function saveBookingDraft(bookingId){
+  const draft = state.bookingDraft;
+  if(!draft) return;
+  const notesInput = document.getElementById('draftAdminNotes');
+  draft.adminNotes = notesInput ? notesInput.value : (draft.adminNotes || '');
+  draft.total = draft.activities.reduce((sum,act)=> sum + (act.unitPrice||0) * ((act.assignedPersonIds||[]).length), 0);
+  const idx = state.bookings.findIndex(x=>x.id===bookingId);
+  if(idx>-1) state.bookings[idx] = draft;
+  await storeSet(SK.bookings, state.bookings, true);
+  await syncBookingPeopleToClientDb(draft);
+  state.bookingDraft = null;
+  showToast('Booking updated.');
+  refreshBookingModal(bookingId);
+  renderTab();
+}
+async function syncBookingPeopleToClientDb(booking){
+  const db = await storeGet(SK.clients, true) || {};
+  const dateIso = booking.activities[0] ? booking.activities[0].date : '';
+  booking.people.forEach(p=>{
+    if(!p.email) return;
+    const key = p.email.toLowerCase();
+    if(!db[key]) db[key] = { history: [] };
+    const existingIdx = db[key].history.findIndex(h=>h.bookingCode===booking.bookingCode);
+    const entry = { date: dateIso, bookingCode: booking.bookingCode, snapshot: JSON.parse(JSON.stringify(p)) };
+    if(existingIdx>-1) db[key].history[existingIdx] = entry; else db[key].history.push(entry);
+  });
+  await storeSet(SK.clients, db, true);
+  state.clients = db;
+}
+
+async function adminSetBookingStatus(bookingId, newStatus){
+  if(newStatus === 'done'){ promptMarkDone(bookingId); return; }
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  b.status = newStatus;
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast(`Booking #${b.bookingCode} marked as ${newStatus}. Use "Send updated version to client" if they should be notified.`);
+  renderTab();
+  refreshBookingModal(bookingId);
+}
+function promptMarkDone(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  const remaining = Math.max(0, (b.total||0) - bookingCollected(b));
+  showModal(`
+    <h3 style="padding-right:30px;">Mark booking as done</h3>
+    <p style="color:var(--ink-soft); font-size:13.5px; margin:10px 0 16px;">Record the final payment before closing this booking — once marked done, it can no longer be edited. Leave the amount at 0 to skip recording a payment.</p>
+    <div class="field-grid">
+      <div class="field"><label>Final amount received (MX$)</label><input type="number" min="0" id="finalPaymentInput" value="${remaining}"></div>
+      <div class="field"><label>Paid to</label>
+        <select id="finalPaymentAccountInput">
+          ${(state.settings.paymentAccounts||[]).map(acc=>`<option value="${escapeAttr(acc)}">${escapeHtml(acc)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn btn-primary" data-confirm-mark-done="${b.id}">✓ Confirm &amp; mark done</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+}
+async function confirmMarkDone(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  const amtInput = document.getElementById('finalPaymentInput');
+  const accInput = document.getElementById('finalPaymentAccountInput');
+  const amount = amtInput ? (Number(amtInput.value)||0) : 0;
+  if(amount > 0){
+    if(!b.payments) b.payments = [];
+    b.payments.push({ id: uid('pay'), type:'payment', amount, date: fmtDate(TODAY), account: accInput?accInput.value:'' });
+    b.deposit = bookingCollected(b);
+  }
+  b.status = 'done';
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast(`Booking #${b.bookingCode} marked as done.`);
+  closeModal();
+  renderTab();
+}
+function startAddPayment(bookingId){
+  state.addingPaymentFor = bookingId;
+  refreshBookingModal(bookingId);
+}
+function cancelAddPayment(bookingId){
+  state.addingPaymentFor = null;
+  refreshBookingModal(bookingId);
+}
+async function confirmAddPayment(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  const type = document.getElementById('newPaymentType').value;
+  const amount = Number(document.getElementById('newPaymentAmount').value) || 0;
+  const date = document.getElementById('newPaymentDate').value || fmtDate(TODAY);
+  const account = document.getElementById('newPaymentAccount').value;
+  if(amount <= 0){ showToast('Enter an amount greater than zero.'); return; }
+  if(!b.payments) b.payments = [];
+  b.payments.push({ id: uid('pay'), type, amount, date, account });
+  b.deposit = bookingCollected(b); // keep legacy field in sync for anything that still reads it
+  await storeSet(SK.bookings, state.bookings, true);
+  state.addingPaymentFor = null;
+  showToast(`${type==='refund'?'Refund':type==='deposit'?'Deposit':'Payment'} of ${fmtMoney(amount)} recorded.`);
+  renderTab();
+  refreshBookingModal(bookingId);
+}
+async function deletePayment(bookingId, paymentId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b || !b.payments) return;
+  if(!window.confirm('Remove this payment record? This cannot be undone.')) return;
+  b.payments = b.payments.filter(p=>p.id!==paymentId);
+  b.deposit = bookingCollected(b);
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast('Payment removed.');
+  renderTab();
+  refreshBookingModal(bookingId);
+}
+async function saveBookingDiscount(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  const overrideInput = document.getElementById('bookingPriceOverride');
+  const overrideVal = overrideInput ? overrideInput.value.trim() : '';
+  b.priceOverride = overrideVal !== '' ? Number(overrideVal) : null;
+  const type = document.getElementById('bookingDiscountType').value;
+  const value = Number(document.getElementById('bookingDiscountValue').value) || 0;
+  b.discount = (type && value > 0) ? { type, value } : null;
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast('Pricing saved.');
+  renderTab();
+  refreshBookingModal(bookingId);
+}
+function buildBookingEmailPreviewHtml(b){
+  const lang = (b.mainContact && b.mainContact.language) || b.pageLanguage || 'en';
+  const statusCopy = {
+    pending:   { en:'Confirmation is pending', es:'Confirmación pendiente' },
+    confirmed: { en:'Your booking is confirmed', es:'Tu reserva está confirmada' },
+    cancelled: { en:'This booking has been cancelled', es:'Esta reserva ha sido cancelada' },
+    done:      { en:'Trip completed — thank you!', es:'¡Viaje completado — gracias!' },
+  };
+  const label = (statusCopy[b.status] && statusCopy[b.status][lang]) || statusCopy[b.status].en;
+  const activitiesHtml = (b.activities||[]).map(act=>{
+    const a = activityById(act.activityId);
+    const n = (act.assignedPersonIds||[]).length;
+    return `<div class="lg-row"><span class="k" tr="${escapeAttr(a?activityDisplayName(a):'')}">${a?a.icon+' '+activityDisplayName(a):''}</span><span class="v">${fmtBaRange(act)} · ${n} ${lang==='es'?'personas':'people'}</span></div>`;
+  }).join('');
+  return `
+  <div style="padding-right:30px;">
+    <h3 tr="Hidrosfera">Hidrosfera</h3>
+    <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--ink-soft); margin-top:4px;" tr="Email preview — language: ${lang.toUpperCase()}">Email preview — language: ${lang.toUpperCase()}</div>
+    <div class="badge badge-${b.status}" style="margin-top:10px;" tr="${escapeAttr(label)}">${label}</div>
+  </div>
+  <div style="margin-top:18px;">
+    <div class="lg-row"><span class="k" tr="To">To</span><span class="v">${escapeHtml((b.mainContact&&b.mainContact.email)||'—')}</span></div>
+    <div class="lg-row"><span class="k" tr="Booking">Booking</span><span class="v">#${escapeHtml(b.bookingCode)}</span></div>
+  </div>
+  <div style="margin-top:14px;">
+    <div class="section-title" tr="Activities">Activities</div>
+    ${activitiesHtml}
+  </div>
+  <div style="margin-top:14px;">
+    <div class="lg-row" style="font-weight:700; font-size:15px;"><span class="k" tr="Total">Total</span><span class="v">${fmtMoney(bookingTotalAfterDiscount(b))}</span></div>
+    <div class="lg-row"><span class="k" tr="Collected so far">Collected so far</span><span class="v">${fmtMoney(bookingCollected(b))}</span></div>
+  </div>
+  <p style="font-size:12px; color:var(--ink-soft); margin-top:16px;" tr="This preview is what would be emailed to the client, in their preferred language. Connect a real mail provider to send it for real — see chat for setup notes.">This preview is what would be emailed to the client, in their preferred language. Connect a real mail provider to send it for real — see chat for setup notes.</p>
+  `;
+}
+function adminResendEmail(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  showModal(buildBookingEmailPreviewHtml(b));
+}
+
+/* =======================================================================
+   TRIP REPORT (PDF) — opens a print-formatted page and triggers the
+   browser's print dialog, where "Save as PDF" produces the file. No
+   external library needed, works offline, works on any host.
+   ======================================================================= */
+function buildTripReportHtml(b){
+  const activitiesHtml = (b.activities||[]).map(act=>{
+    const a = activityById(act.activityId);
+    const n = (act.assignedPersonIds||[]).length;
+    return `
+    <div class="rpt-activity">
+      <h3>${a?a.icon:''} ${escapeHtml(a?activityDisplayName(a):'Unknown experience')}</h3>
+      <div class="rpt-activity-meta">${fmtBaRange(act)} ${a&&a.meetupTime?' · Meets '+fmtTime12(a.meetupTime):''} · ${n} traveler${n!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+
+  const travelersHtml = b.people.map((p,i)=>`
+    <tr>
+      <td>${escapeHtml(p.fullName || 'Traveler '+(i+1))}</td>
+      <td>${p.dob ? fmtDateHuman(p.dob) : '—'}</td>
+      <td>${escapeHtml(equipmentSummaryLineAdmin(p))}</td>
+      <td>${escapeHtml(p.allergies || '—')}</td>
+    </tr>`).join('');
+
+  const firstAct = (b.activities||[])[0];
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Trip report — ${escapeHtml(b.bookingCode)}</title>
+<style>
+  body{ font-family: Arial, Helvetica, sans-serif; color:#10262B; margin:36px; }
+  h1{ font-size:20px; margin:0 0 2px; }
+  h3{ font-size:15px; margin:0 0 3px; }
+  .rpt-head{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0B3D4C; padding-bottom:14px; margin-bottom:20px; }
+  .rpt-sub{ font-size:12px; color:#4A5D61; margin-top:4px; }
+  .rpt-section-title{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#1C7C82; border-bottom:1px solid #ddd; padding-bottom:6px; margin:22px 0 10px; }
+  .rpt-activity{ border:1px solid #ddd; border-radius:6px; padding:10px 14px; margin-bottom:8px; }
+  .rpt-activity-meta{ font-size:12px; color:#4A5D61; margin-top:2px; }
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th{ text-align:left; font-size:10.5px; text-transform:uppercase; color:#4A5D61; border-bottom:2px solid #ddd; padding:6px 8px; }
+  td{ padding:8px; border-bottom:1px solid #eee; vertical-align:top; }
+  .rpt-notes{ font-size:12.5px; white-space:pre-wrap; background:#f7f4ec; border-radius:6px; padding:12px 14px; margin-top:8px; }
+  @media print{ @page{ margin:16mm; } }
+</style>
+</head>
+<body>
+  <div class="rpt-head">
+    <div>
+      <h1>Hidrosfera — Trip Report</h1>
+      <div class="rpt-sub">Booking #${escapeHtml(b.bookingCode)} · ${firstAct?fmtBaRange(firstAct):''}</div>
+    </div>
+    <div class="rpt-sub" style="text-align:right;">Main contact: ${escapeHtml(bookingContactName(b))}<br>Status: ${b.status}</div>
+  </div>
+
+  <div class="rpt-section-title">Experiences</div>
+  ${activitiesHtml}
+
+  <div class="rpt-section-title">Travelers</div>
+  <table>
+    <thead><tr><th>Full name</th><th>Date of birth</th><th>Rental equipment</th><th>Allergy / restrictions</th></tr></thead>
+    <tbody>${travelersHtml}</tbody>
+  </table>
+
+  ${b.adminNotes ? `<div class="rpt-section-title">Notes</div><div class="rpt-notes">${escapeHtml(b.adminNotes)}</div>` : ''}
+</body></html>`;
+}
+function exportTripReport(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  const win = window.open('', '_blank');
+  if(!win){ showToast('Your browser blocked the report window — allow pop-ups for this site and try again.'); return; }
+  win.document.write(buildTripReportHtml(b));
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); }, 300);
+}
+
+/* =======================================================================
+   ALL BOOKINGS TAB
+   ======================================================================= */
+function bookingActivitiesSummary(b){
+  return (b.activities||[]).map(act=>{ const a=activityById(act.activityId); return a ? (a.icon+' '+activityDisplayName(a)) : 'Unknown experience'; }).join(', ');
+}
+function renderBookingsTab(){
+  const q = (state.bookingsFilter.q||'').toLowerCase();
+  const statusF = state.bookingsFilter.status;
+  let rows = state.bookings.filter(b=>{
+    if(statusF!=='all' && b.status!==statusF) return false;
+    if(!q) return true;
+    const hay = (b.bookingCode+' '+bookingContactName(b)+' '+bookingActivitiesSummary(b)).toLowerCase();
+    return hay.includes(q);
+  }).sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="All bookings">All bookings</div>
+      <div class="page-sub" tr="Search and filter every booking made through the site.">Search and filter every booking made through the site.</div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <input type="text" id="bookingsSearch" placeholder="Search by name, code, or activity…" value="${escapeAttr(state.bookingsFilter.q)}">
+    <select id="bookingsStatusFilter">
+      <option value="all" ${statusF==='all'?'selected':''}>All statuses</option>
+      <option value="pending" ${statusF==='pending'?'selected':''}>Pending</option>
+      <option value="confirmed" ${statusF==='confirmed'?'selected':''}>Confirmed</option>
+      <option value="cancelled" ${statusF==='cancelled'?'selected':''}>Cancelled</option>
+      <option value="done" ${statusF==='done'?'selected':''}>Done</option>
+    </select>
+    <span class="stat-sub" style="margin-left:auto;">${rows.length} booking${rows.length!==1?'s':''}</span>
+  </div>
+  <div class="card" style="padding:0; overflow-x:auto;">
+    <table>
+      <thead><tr><th>Made on</th><th>Main contact</th><th>People</th><th>Activities</th><th>Status</th></tr></thead>
+      <tbody>
+        ${rows.map(b=>`
+          <tr class="table-row" data-open-booking="${b.id}">
+            <td>${new Date(b.createdAt).toLocaleDateString()}</td>
+            <td>${escapeHtml(bookingContactName(b))}</td>
+            <td>${b.people.length}</td>
+            <td style="max-width:280px; white-space:normal;">${escapeHtml(bookingActivitiesSummary(b))}</td>
+            <td><span class="badge badge-${b.status}">${b.status}</span></td>
+          </tr>`).join('') || `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--ink-soft);">No bookings match.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* =======================================================================
+   ACTIVITIES & AVAILABILITY TAB
+   ======================================================================= */
+function renderActivitiesTab(){
+  const rows = state.activities.map((a,i)=>{
+    const thumbStyle = a.image ? `background-image:url('${escapeAttr(a.image)}'); background-size:cover; background-position:center;` : '';
+    const discountLabel = a.discount ? (a.discount.type==='percent' ? a.discount.value+'% off' : fmtMoney(a.discount.value)+' off') : '';
+    return `
+    <div class="activity-row">
+      <div class="reorder-col">
+        <button class="icon-btn" data-move-activity="${i}" data-move-dir="up" ${i===0?'disabled':''} aria-label="Move up">▲</button>
+        <button class="icon-btn" data-move-activity="${i}" data-move-dir="down" ${i===state.activities.length-1?'disabled':''} aria-label="Move down">▼</button>
+      </div>
+      <div class="thumb" style="${thumbStyle}">${a.image ? '' : a.icon}</div>
+      <div class="info">
+        <h4>${escapeHtml(activityDisplayName(a))} ${!a.active ? '<span class="pill-inactive">inactive</span>' : ''}</h4>
+        <div class="meta">${escapeHtml(a.name)} · ${escapeHtml(a.category||'')} · ${fmtMoney(a.price)}/person ${discountLabel?'· '+discountLabel:''} ${a.meetupTime?'· Meets '+fmtTime12(a.meetupTime):''}</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" data-preview-activity="${a.id}">Preview</button>
+        <button class="btn btn-outline btn-sm" data-edit-activity="${a.id}">Edit</button>
+        <button class="btn btn-outline btn-sm" data-manage-avail="${a.id}">Availability</button>
+        <button class="btn ${a.active?'btn-danger':'btn-primary'} btn-sm" data-toggle-active="${a.id}">${a.active?'Deactivate':'Activate'}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const availSection = state.availEditingId ? renderAvailabilityEditor(state.availEditingId) : '';
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="Activities &amp; availability">Activities &amp; availability</div>
+      <div class="page-sub" tr="Add, edit, or deactivate experiences, and manage which dates are blocked for each one. Use the arrows to change the order they appear on the booking site.">Add, edit, or deactivate experiences, and manage which dates are blocked for each one. Use the arrows to change the order they appear on the booking site.</div>
+    </div>
+    <button class="btn btn-primary" id="addActivityBtn">+ Add activity</button>
+  </div>
+  <div class="card">${rows || '<p style="color:var(--ink-soft);">No activities yet.</p>'}</div>
+  ${availSection}`;
+}
+
+function renderAvailabilityEditor(activityId){
+  const a = activityById(activityId);
+  if(!a) return '';
+  const { y, m } = state.availMonth;
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const monthLabel = first.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  const blocked = state.availability[activityId] || [];
+  const canGoPrev = new Date(y,m,1) > new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  const canGoNext = new Date(y,m+1,1) <= MAX_DATE;
+
+  let cells = '';
+  const dows = ['S','M','T','W','T','F','S'];
+  cells += dows.map(d=>`<div class="admin-cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) cells += `<div class="avail-day out-range"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dateObj = new Date(y,m,d);
+    const iso = fmtDate(dateObj);
+    const isPast = dateObj < TODAY;
+    const isBlocked = blocked.includes(iso);
+    cells += `<button type="button" class="avail-day ${isBlocked?'blocked':''} ${isPast?'past':''}" ${isPast?'disabled':''} data-avail-day="${iso}">${d}</button>`;
+  }
+
+  return `
+  <div class="card">
+    <div class="page-head" style="margin-bottom:14px;">
+      <div>
+        <h3>${a.icon} ${escapeHtml(a.name)} — availability</h3>
+        <div class="stat-sub" style="margin-top:4px;">Click a date to block or unblock it. Blocked dates won't be selectable on the booking site.</div>
+      </div>
+      <button class="btn btn-outline btn-sm" id="closeAvailEditor">Done</button>
+    </div>
+    <div class="admin-cal-head">
+      <button data-avail-nav="prev" ${canGoPrev?'':'disabled'} aria-label="Previous month">‹</button>
+      <div class="admin-cal-title">${monthLabel}</div>
+      <button data-avail-nav="next" ${canGoNext?'':'disabled'} aria-label="Next month">›</button>
+    </div>
+    <div class="admin-cal-grid" style="grid-template-columns:repeat(7,1fr); margin-top:12px;">${cells}</div>
+  </div>`;
+}
+
+function openActivityEditor(activityId){
+  const isNew = !activityId;
+  const a = isNew
+    ? { id:uid('act'), name:'', category:'', icon:'🌊', image:'', shortDesc:'', longDesc:'', durationLabel:'', hours:'', price:0, active:true, discount:null, highlights:[], included:[], bring:[], meetingPoint:'' }
+    : JSON.parse(JSON.stringify(activityById(activityId)));
+  showModal(buildActivityFormHtml(a, isNew));
+}
+
+function buildActivityFormHtml(a, isNew){
+  return `
+  <h3 style="padding-right:30px;">${isNew?'Add new activity':'Edit activity'}</h3>
+  <div class="field-grid" style="margin-top:18px;">
+    <div class="field"><label>Display name (shown to customers)</label><input type="text" id="af_displayname" value="${escapeAttr(a.displayName||a.name||'')}"></div>
+    <div class="field"><label>Internal name (for admin lists/search — can be short)</label><input type="text" id="af_name" value="${escapeAttr(a.name)}" placeholder="e.g. Whale Shark"></div>
+    <div class="field"><label>Category</label><input type="text" id="af_category" value="${escapeAttr(a.category)}" placeholder="Diving, Snorkeling…"></div>
+    <div class="field"><label>Diving type (for the Payments breakdown)</label>
+      <select id="af_divingtype">
+        <option value="" ${!a.divingType?'selected':''}>Not diving-related</option>
+        <option value="scuba" ${a.divingType==='scuba'?'selected':''}>Scuba</option>
+        <option value="freediving" ${a.divingType==='freediving'?'selected':''}>Free diving</option>
+        <option value="snorkel" ${a.divingType==='snorkel'?'selected':''}>Snorkel</option>
+      </select>
+    </div>
+    <div class="field"><label>Icon (emoji)</label><input type="text" id="af_icon" value="${escapeAttr(a.icon)}" maxlength="4"></div>
+    <div class="field"><label>Image URL (optional — leave blank to use a color gradient)</label><input type="text" id="af_image" value="${escapeAttr(a.image||'')}" placeholder="https://…"></div>
+    <div class="field"><label>Price per person (MX$)</label><input type="number" min="0" id="af_price" value="${a.price}"></div>
+    <div class="field"><label>Duration label</label><input type="text" id="af_duration" value="${escapeAttr(a.durationLabel||'')}" placeholder="4 hrs · morning"></div>
+    <div class="field"><label>Hours</label><input type="text" id="af_hours" value="${escapeAttr(a.hours||'')}" placeholder="Departs 8:00 AM · Returns 12:00 PM"></div>
+    <div class="field"><label>Meetup time</label><input type="time" id="af_meetuptime" value="${escapeAttr(a.meetupTime||'')}"></div>
+    <div class="field"><label>Discount type</label>
+      <select id="af_discount_type">
+        <option value="" ${!a.discount?'selected':''}>No discount</option>
+        <option value="percent" ${a.discount&&a.discount.type==='percent'?'selected':''}>Percent (%)</option>
+        <option value="amount" ${a.discount&&a.discount.type==='amount'?'selected':''}>Fixed amount (MX$)</option>
+      </select>
+    </div>
+    <div class="field"><label>Discount value</label><input type="number" min="0" id="af_discount_value" value="${a.discount?a.discount.value:0}"></div>
+    <div class="field"><label>Multi-day discount — minimum days</label><input type="number" min="2" id="af_mdd_mindays" value="${a.multiDayDiscount?a.multiDayDiscount.minDays:''}" placeholder="e.g. 3"></div>
+    <div class="field"><label>Multi-day discount type</label>
+      <select id="af_mdd_type">
+        <option value="percent" ${(!a.multiDayDiscount||a.multiDayDiscount.type==='percent')?'selected':''}>Percent (%)</option>
+        <option value="amount" ${a.multiDayDiscount&&a.multiDayDiscount.type==='amount'?'selected':''}>Fixed amount (MX$)</option>
+      </select>
+    </div>
+    <div class="field"><label>Multi-day discount value</label><input type="number" min="0" id="af_mdd_value" value="${a.multiDayDiscount?a.multiDayDiscount.value:0}"></div>
+    <div class="field"><label>Offers Nitrox?</label>
+      <select id="af_nitrox_available">
+        <option value="" ${!a.nitroxAvailable?'selected':''}>No</option>
+        <option value="1" ${a.nitroxAvailable?'selected':''}>Yes</option>
+      </select>
+    </div>
+    <div class="field"><label>Nitrox price per tank (MX$)</label><input type="number" min="0" id="af_nitrox_price" value="${a.nitroxPricePerTank||200}"></div>
+    <div class="field"><label>Tanks per day</label><input type="number" min="1" id="af_tanks_per_day" value="${a.tanksPerDay||1}"></div>
+    <div class="field" style="grid-column:1/-1;"><label>Short description (shown on the card)</label><textarea id="af_shortdesc">${escapeHtml(a.shortDesc||'')}</textarea></div>
+    <div class="field" style="grid-column:1/-1;"><label>Long description (shown in "More information")</label><textarea id="af_longdesc">${escapeHtml(a.longDesc||'')}</textarea></div>
+    <div class="field"><label>Highlights (one per line)</label><textarea id="af_highlights">${(a.highlights||[]).join('\n')}</textarea></div>
+    <div class="field"><label>What's included (one per line)</label><textarea id="af_included">${(a.included||[]).join('\n')}</textarea></div>
+    <div class="field"><label>What to bring (one per line)</label><textarea id="af_bring">${(a.bring||[]).join('\n')}</textarea></div>
+    <div class="field"><label>Meeting point</label><textarea id="af_meeting">${escapeHtml(a.meetingPoint||'')}</textarea></div>
+  </div>
+  <div style="display:flex; gap:10px; margin-top:20px;">
+    <button class="btn btn-primary" data-save-activity="${a.id}" data-is-new="${isNew?'1':'0'}">Save activity</button>
+    ${!isNew ? `<button class="btn btn-danger" data-delete-activity="${a.id}">Delete activity</button>` : ''}
+  </div>`;
+}
+
+async function saveActivityFromForm(activityId, isNew){
+  const get = id => document.getElementById(id).value;
+  const discountType = get('af_discount_type');
+  const discountVal = Number(get('af_discount_value'))||0;
+  const mddMinDays = Number(get('af_mdd_mindays'))||0;
+  const mddVal = Number(get('af_mdd_value'))||0;
+  const existing = activityById(activityId);
+  const activityData = {
+    id: activityId,
+    name: get('af_name').trim() || 'Untitled experience',
+    displayName: get('af_displayname').trim() || get('af_name').trim() || 'Untitled experience',
+    category: get('af_category').trim() || 'General',
+    divingType: get('af_divingtype') || null,
+    icon: get('af_icon').trim() || '🌊',
+    image: get('af_image').trim() || null,
+    price: Number(get('af_price'))||0,
+    durationLabel: get('af_duration').trim(),
+    hours: get('af_hours').trim(),
+    meetupTime: get('af_meetuptime'),
+    discount: discountType ? { type: discountType, value: discountVal } : null,
+    multiDayDiscount: (mddMinDays >= 2 && mddVal > 0) ? { minDays: mddMinDays, type: get('af_mdd_type'), value: mddVal } : null,
+    nitroxAvailable: get('af_nitrox_available') === '1',
+    nitroxPricePerTank: Number(get('af_nitrox_price'))||200,
+    tanksPerDay: Number(get('af_tanks_per_day'))||1,
+    shortDesc: get('af_shortdesc').trim(),
+    longDesc: get('af_longdesc').trim(),
+    highlights: get('af_highlights').split('\n').map(s=>s.trim()).filter(Boolean),
+    included: get('af_included').split('\n').map(s=>s.trim()).filter(Boolean),
+    bring: get('af_bring').split('\n').map(s=>s.trim()).filter(Boolean),
+    meetingPoint: get('af_meeting').trim(),
+    active: existing ? existing.active : true,
+  };
+  if(isNew){ state.activities.push(activityData); }
+  else{
+    const idx = state.activities.findIndex(x=>x.id===activityId);
+    if(idx>-1) state.activities[idx] = activityData;
+  }
+  await storeSet(SK.activities, state.activities, true);
+  showToast('Activity saved.');
+  closeModal();
+  renderTab();
+}
+async function deleteActivityConfirmed(activityId){
+  state.activities = state.activities.filter(a=>a.id!==activityId);
+  await storeSet(SK.activities, state.activities, true);
+  showToast('Activity deleted.');
+  closeModal();
+  renderTab();
+}
+async function toggleActivityActive(activityId){
+  const a = activityById(activityId);
+  if(!a) return;
+  a.active = !a.active;
+  await storeSet(SK.activities, state.activities, true);
+  renderTab();
+}
+async function moveActivity(index, dir){
+  const swapWith = dir === 'up' ? index - 1 : index + 1;
+  if(swapWith < 0 || swapWith >= state.activities.length) return;
+  const arr = state.activities;
+  [arr[index], arr[swapWith]] = [arr[swapWith], arr[index]];
+  await storeSet(SK.activities, state.activities, true);
+  renderTab();
+}
+function previewActivity(activityId){
+  const a = activityById(activityId);
+  if(!a) return;
+  const mediaStyle = a.image ? `background-image:url('${escapeAttr(a.image)}'); background-size:cover; background-position:center;` : `background:linear-gradient(135deg,var(--deep),var(--teal));`;
+  const finalPrice = adminUnitPrice(a);
+  const hasDiscount = !!a.discount;
+  const list = (arr) => (arr||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
+  showModal(`
+    <h3 style="padding-right:30px; margin-bottom:14px;">Preview — how this looks to customers</h3>
+    <div style="border-radius:18px; overflow:hidden; box-shadow:var(--shadow-card); max-width:360px;">
+      <div style="height:150px; position:relative; display:flex; align-items:flex-end; padding:14px; color:#fff; ${mediaStyle}">
+        <span style="position:absolute; top:12px; left:12px; background:rgba(251,250,247,.92); color:var(--deep); font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; padding:4px 10px; border-radius:999px; font-weight:600;">${escapeHtml(a.category||'')}</span>
+        ${!a.image ? `<span style="font-size:38px;">${a.icon}</span>` : ''}
+      </div>
+      <div style="padding:16px 18px; background:var(--foam);">
+        <div style="font-family:var(--font-display); font-size:18px; color:var(--deep); margin-bottom:6px;">${escapeHtml(activityDisplayName(a))}</div>
+        <div style="font-size:13px; color:var(--ink-soft); margin-bottom:10px;">${escapeHtml(a.shortDesc||'')}</div>
+        <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono);">⏱ ${escapeHtml(a.durationLabel||'')}</div>
+        <div style="font-family:var(--font-display); font-size:19px; color:var(--deep); margin-top:10px;">
+          ${hasDiscount ? `<span style="text-decoration:line-through; font-size:13px; font-family:var(--font-body); color:var(--ink-soft); margin-right:6px;">${fmtMoney(a.price)}</span>` : ''}
+          ${fmtMoney(finalPrice)} <small style="font-family:var(--font-body); font-size:12px; font-weight:400;">/ person</small>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:18px;">
+      <div class="section-title">"More information" content</div>
+      <p style="font-size:13.5px; color:var(--ink-soft); line-height:1.6;">${escapeHtml(a.longDesc||a.shortDesc||'—')}</p>
+      <div style="font-family:var(--font-mono); font-size:12px; color:var(--teal); margin-top:8px;">🕒 ${escapeHtml(a.hours||a.durationLabel||'—')}</div>
+      ${a.highlights&&a.highlights.length ? `<div style="font-size:11px; text-transform:uppercase; color:var(--teal); font-family:var(--font-mono); margin-top:12px;">Highlights</div><ul style="font-size:13px; color:var(--ink-soft); padding-left:18px;">${list(a.highlights)}</ul>` : ''}
+      ${a.included&&a.included.length ? `<div style="font-size:11px; text-transform:uppercase; color:var(--teal); font-family:var(--font-mono); margin-top:12px;">What's included</div><ul style="font-size:13px; color:var(--ink-soft); padding-left:18px;">${list(a.included)}</ul>` : ''}
+      ${a.meetingPoint ? `<div style="font-size:11px; text-transform:uppercase; color:var(--teal); font-family:var(--font-mono); margin-top:12px;">Meeting point</div><p style="font-size:13px; color:var(--ink-soft);">${escapeHtml(a.meetingPoint)}</p>` : ''}
+    </div>
+  `);
+}
+async function toggleAvailabilityDay(activityId, iso){
+  if(!activityId) return;
+  if(!state.availability[activityId]) state.availability[activityId] = [];
+  const list = state.availability[activityId];
+  const idx = list.indexOf(iso);
+  if(idx>-1) list.splice(idx,1); else list.push(iso);
+  await storeSet(SK.availability, state.availability, true);
+  renderTab();
+}
+
+/* =======================================================================
+   CLIENTS (CRM) TAB — with birthday reminders
+   ======================================================================= */
+function allClientsList(){
+  return Object.keys(state.clients).map(email=>{
+    const rec = state.clients[email] || { history: [] };
+    const latest = rec.history[rec.history.length-1] || {};
+    const snap = latest.snapshot || {};
+    return {
+      email, fullName: snap.fullName || '—', dob: snap.dob || '', language: snap.language || 'en',
+      visits: rec.history.length, lastVisit: latest.date || '', allergies: snap.allergies || '', history: rec.history || []
+    };
+  });
+}
+function birthdaysThisMonth(){
+  const curMonth = TODAY.getMonth();
+  return allClientsList().filter(c => c.dob && parseDate(c.dob).getMonth() === curMonth);
+}
+function findBookingByCode(code){ return state.bookings.find(b=>b.bookingCode===code); }
+function renderClientsTab(){
+  const q = (state.clientsSearch||'').toLowerCase();
+  let clients = allClientsList();
+  if(q) clients = clients.filter(c => (c.fullName+' '+c.email).toLowerCase().includes(q));
+  if(state.clientsLangFilter && state.clientsLangFilter!=='all') clients = clients.filter(c => (c.language||'en')===state.clientsLangFilter);
+
+  const sortKey = state.clientsSort.key, sortDir = state.clientsSort.dir;
+  clients.sort((a,b)=>{
+    let av = a[sortKey], bv = b[sortKey];
+    if(sortKey==='visits'){ av = a.visits; bv = b.visits; }
+    else { av = String(av||'').toLowerCase(); bv = String(bv||'').toLowerCase(); }
+    if(av < bv) return sortDir==='asc' ? -1 : 1;
+    if(av > bv) return sortDir==='asc' ? 1 : -1;
+    return 0;
+  });
+  const birthdays = birthdaysThisMonth();
+  const sortArrow = key => state.clientsSort.key===key ? (state.clientsSort.dir==='asc'?' ▲':' ▼') : '';
+
+  return `
+  <div class="page-head">
+    <div>
+      <div class="page-title" tr="Clients">Clients</div>
+      <div class="page-sub" tr="Everyone who has given an email, with their visit history.">Everyone who has given an email, with their visit history.</div>
+    </div>
+  </div>
+
+  ${birthdays.length ? `
+  <div class="card" style="background:var(--warn-bg);">
+    <div class="section-title" style="color:#7a5c00;">🎂 Birthdays this month</div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      ${birthdays.map(c=>{
+        const dobDate = parseDate(c.dob);
+        const turningAge = TODAY.getFullYear() - dobDate.getFullYear();
+        return `<div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border-radius:10px; padding:10px 14px;">
+          <div>
+            <div style="font-weight:600; font-size:14px;">${escapeHtml(c.fullName)}</div>
+            <div style="font-size:12px; color:var(--ink-soft);">${fmtDateHuman(c.dob)} · turning ${turningAge}</div>
+          </div>
+          <button class="btn-text" style="color:#7a5c00; text-decoration:underline;" data-send-birthday="${escapeAttr(c.email)}">Send congratulations</button>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>` : ''}
+
+  <div class="toolbar">
+    <input type="text" id="clientsSearch" placeholder="Search by name or email…" value="${escapeAttr(state.clientsSearch||'')}">
+    <select id="clientsLangFilter">
+      <option value="all" ${state.clientsLangFilter==='all'?'selected':''}>All languages</option>
+      <option value="en" ${state.clientsLangFilter==='en'?'selected':''}>English</option>
+      <option value="es" ${state.clientsLangFilter==='es'?'selected':''}>Español</option>
+    </select>
+    <span class="stat-sub" style="margin-left:auto;">${clients.length} client${clients.length!==1?'s':''}</span>
+  </div>
+
+  <div class="card" style="padding:0; overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th data-client-sort="fullName" style="cursor:pointer;">Name${sortArrow('fullName')}</th>
+        <th data-client-sort="email" style="cursor:pointer;">Email${sortArrow('email')}</th>
+        <th data-client-sort="visits" style="cursor:pointer;">Visits${sortArrow('visits')}</th>
+        <th data-client-sort="lastVisit" style="cursor:pointer;">Last visit${sortArrow('lastVisit')}</th>
+        <th data-client-sort="language" style="cursor:pointer;">Language${sortArrow('language')}</th>
+      </tr></thead>
+      <tbody>
+        ${clients.map(c=>`
+          <tr class="table-row" data-open-client="${escapeAttr(c.email)}">
+            <td>${escapeHtml(c.fullName)}</td>
+            <td>${escapeHtml(c.email)}</td>
+            <td>${c.visits}</td>
+            <td>${c.lastVisit ? fmtDateHuman(c.lastVisit) : '—'}</td>
+            <td>${(c.language||'en').toUpperCase()}</td>
+          </tr>`).join('') || `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--ink-soft);">No clients yet.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+function ownEquipFieldsHtml(snap, idPrefix){
+  const oe = snap.ownEquipment || {};
+  const bcd = oe.bcd || {}, fins = oe.fins || {}, wetsuit = oe.wetsuit || {}, mask = oe.mask || {}, regulator = oe.regulator || {};
+  const wu = (snap.weightsUsed && typeof snap.weightsUsed === 'object') ? snap.weightsUsed : { amount: snap.weightsUsed||'', unit:'kg' };
+  return `
+  <div class="section-title" style="margin-top:20px;">Own equipment (admin notes — nothing required)</div>
+  <div style="display:grid; gap:10px;">
+    <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
+      <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">BCD</div>
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;"><label>Size</label>
+          <select id="${idPrefix}BcdSize"><option value="">—</option>${SIZE_RANGE.map(s=>`<option value="${s}" ${bcd.size===s?'selected':''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Brand</label><input type="text" id="${idPrefix}BcdBrand" value="${escapeAttr(bcd.brand||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Model</label><input type="text" id="${idPrefix}BcdModel" value="${escapeAttr(bcd.model||'')}"></div>
+      </div>
+    </div>
+    <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
+      <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">Fins</div>
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;"><label>Size</label>
+          <select id="${idPrefix}FinsSize"><option value="">—</option>${finSizeOptionsAdmin(snap.gender, fins.size)}</select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Brand</label><input type="text" id="${idPrefix}FinsBrand" value="${escapeAttr(fins.brand||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Model</label><input type="text" id="${idPrefix}FinsModel" value="${escapeAttr(fins.model||'')}"></div>
+      </div>
+    </div>
+    <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
+      <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">Wetsuit</div>
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;"><label>Size</label>
+          <select id="${idPrefix}WetsuitSize"><option value="">—</option>${SIZE_RANGE.map(s=>`<option value="${s}" ${wetsuit.size===s?'selected':''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Brand</label><input type="text" id="${idPrefix}WetsuitBrand" value="${escapeAttr(wetsuit.brand||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Model</label><input type="text" id="${idPrefix}WetsuitModel" value="${escapeAttr(wetsuit.model||'')}"></div>
+      </div>
+    </div>
+    <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
+      <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">Mask</div>
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;"><label>Brand</label><input type="text" id="${idPrefix}MaskBrand" value="${escapeAttr(mask.brand||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Model</label><input type="text" id="${idPrefix}MaskModel" value="${escapeAttr(mask.model||'')}"></div>
+      </div>
+    </div>
+    <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
+      <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">Regulator</div>
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;"><label>Type</label>
+          <select id="${idPrefix}RegType">
+            <option value="">—</option>
+            <option value="DIN" ${regulator.type==='DIN'?'selected':''}>DIN</option>
+            <option value="Yoke" ${regulator.type==='Yoke'?'selected':''}>Yoke</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Brand</label><input type="text" id="${idPrefix}RegBrand" value="${escapeAttr(regulator.brand||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Model</label><input type="text" id="${idPrefix}RegModel" value="${escapeAttr(regulator.model||'')}"></div>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0;"><label>Weights used</label>
+      <div style="display:flex; gap:6px;">
+        <input type="number" min="0" id="${idPrefix}WeightsAmount" value="${escapeAttr(wu.amount||'')}" style="flex:1;">
+        <select id="${idPrefix}WeightsUnit">
+          <option value="kg" ${wu.unit==='kg'?'selected':''}>kg</option>
+          <option value="lb" ${wu.unit==='lb'?'selected':''}>lb</option>
+        </select>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openClientDetail(email){
+  const rec = state.clients[email];
+  if(!rec) return;
+  const latest = rec.history[rec.history.length-1] || {};
+  const snap = latest.snapshot || {};
+  const age = ageFromDob(snap.dob);
+
+  const tripsHtml = rec.history.slice().reverse().map(h=>{
+    const booking = findBookingByCode(h.bookingCode);
+    const activitiesLabel = booking ? (booking.activities||[]).map(act=>{ const a=activityById(act.activityId); return a?activityDisplayName(a):'Unknown'; }).join(', ') : '—';
+    const equip = equipmentSummaryLineAdmin(h.snapshot || {});
+    return `
+    <div class="client-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div>
+          <h4>${fmtDateHuman(h.date)} — ${escapeHtml(activitiesLabel)}</h4>
+          <div class="meta">Equipment: ${escapeHtml(equip)}</div>
+        </div>
+        ${booking ? `<button class="btn btn-outline btn-sm" data-open-booking="${booking.id}" style="flex-shrink:0;">Open reservation</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  showModal(`
+    <div style="padding-right:30px;">
+      <h3>${escapeHtml(snap.fullName || 'Unknown')} <span style="font-family:var(--font-mono); font-size:12px; color:var(--teal); font-weight:600;">${(snap.language||'en').toUpperCase()}</span>${snap.nationality ? ` <span style="font-size:13px; color:var(--ink-soft); font-weight:400;">· ${escapeHtml(snap.nationality)}</span>` : ''}</h3>
+      <div style="font-size:14px; color:var(--ink-soft); margin-top:4px;">${escapeHtml(email)}</div>
+      <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-size:13px; color:var(--ink-soft);">
+        <span><strong style="color:var(--ink);">DOB:</strong> ${snap.dob ? fmtDateHuman(snap.dob) : '—'}</span>
+        <span><strong style="color:var(--ink);">Age:</strong> ${age!=null ? age : '—'}</span>
+        <span><strong style="color:var(--ink);">Gender:</strong> ${escapeHtml(snap.gender||'—')}</span>
+        <span><strong style="color:var(--ink);">Allergies:</strong> ${escapeHtml(snap.allergies||'—')}</span>
+      </div>
+      <div style="font-size:13px; color:var(--ink-soft); margin-top:10px;"><strong style="color:var(--ink);">Latest rental equipment:</strong> ${escapeHtml(equipmentSummaryLineAdmin(snap))}</div>
+    </div>
+    <p style="font-size:12px; color:var(--ink-soft); margin-top:16px;">The section below is a general reference note about this client's own gear — it doesn't replace or get overwritten by what's recorded on any specific reservation.</p>
+    ${ownEquipFieldsHtml(snap, 'own')}
+    <button class="btn btn-primary btn-sm" style="margin-top:10px;" data-save-own-equip-email="${escapeAttr(email)}">Save</button>
+
+    <div class="section-title" style="margin-top:20px;">Trip history (${rec.history.length})</div>
+    ${tripsHtml}
+  `);
+}
+function readOwnEquipmentFromForm(idPrefix){
+  const val = id => (document.getElementById(id)||{}).value || '';
+  return {
+    bcd: { size: val(idPrefix+'BcdSize'), brand: val(idPrefix+'BcdBrand'), model: val(idPrefix+'BcdModel') },
+    fins: { size: val(idPrefix+'FinsSize'), brand: val(idPrefix+'FinsBrand'), model: val(idPrefix+'FinsModel') },
+    wetsuit: { size: val(idPrefix+'WetsuitSize'), brand: val(idPrefix+'WetsuitBrand'), model: val(idPrefix+'WetsuitModel') },
+    mask: { brand: val(idPrefix+'MaskBrand'), model: val(idPrefix+'MaskModel') },
+    regulator: { type: val(idPrefix+'RegType'), brand: val(idPrefix+'RegBrand'), model: val(idPrefix+'RegModel') },
+  };
+}
+async function saveOwnEquipDetailsForEmail(email){
+  const rec = state.clients[email];
+  if(!rec || !rec.history.length) return;
+  const ownEquipment = readOwnEquipmentFromForm('own');
+  const weightsUsed = {
+    amount: (document.getElementById('ownWeightsAmount')||{}).value || '',
+    unit: (document.getElementById('ownWeightsUnit')||{}).value || 'kg',
+  };
+  const latest = rec.history[rec.history.length-1];
+  latest.snapshot.ownEquipment = ownEquipment;
+  latest.snapshot.weightsUsed = weightsUsed;
+  await storeSet(SK.clients, state.clients, true);
+  // mirror onto any bookings where this person appears, so it shows up everywhere immediately
+  state.bookings.forEach(b=>{
+    (b.people||[]).forEach(p=>{
+      if(p.email && p.email.toLowerCase()===email.toLowerCase()){ p.ownEquipment = ownEquipment; p.weightsUsed = weightsUsed; }
+    });
+  });
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast('Saved.');
+  openClientDetail(email);
+}
+
+const RESV_EQUIP_ITEMS = [
+  { key:'bcd',       label:'BCD',           hasSize:true },
+  { key:'computer',  label:'Dive computer', hasSize:false },
+  { key:'fins',      label:'Fins',          hasSize:true, isFins:true },
+  { key:'mask',      label:'Mask',          hasSize:false },
+  { key:'regulator', label:'Regulator',     hasSize:false, isRegulator:true },
+  { key:'wetsuit',   label:'Wetsuit',       hasSize:true, hasThickness:true },
+];
+function findClientProfileByEmail(email){
+  if(!email) return null;
+  const rec = state.clients[email.toLowerCase()];
+  if(!rec || !rec.history.length) return null;
+  return rec.history[rec.history.length-1].snapshot;
+}
+function reservationEquipItemFormHtml(p, def, profileOwn){
+  const { key, label, hasSize, isFins, isRegulator, hasThickness } = def;
+  const it = p.items[key] || {};
+  const mode = it.mode || '';
+  const po = profileOwn || {};
+  const prefillSize = it.size || po.size || '';
+  const prefillBrand = it.brand || po.brand || '';
+  const prefillModel = it.model || po.model || '';
+  const idp = `rsvEq_${key}`;
+  let sizeSelectHtml = '';
+  if(hasSize){
+    sizeSelectHtml = isFins
+      ? `<select id="${idp}_size"><option value="">—</option>${finSizeOptionsAdmin(p.gender, prefillSize)}</select>`
+      : `<select id="${idp}_size"><option value="">—</option>${SIZE_RANGE.map(s=>`<option value="${s}" ${prefillSize===s?'selected':''}>${s}</option>`).join('')}<option value="unknown" ${prefillSize==='unknown'?'selected':''}>Unknown (see height/weight)</option></select>`;
+  }
+  const wasPrefilled = !it.brand && !it.model && !it.size && (po.brand||po.model||po.size);
+  return `
+  <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
+    <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">${label}</div>
+    <div style="display:flex; gap:14px; margin-bottom:6px;">
+      <label style="display:flex; gap:4px; font-size:12px; align-items:center;"><input type="radio" name="${idp}_mode" value="rent" ${mode==='rent'?'checked':''}> Rent</label>
+      <label style="display:flex; gap:4px; font-size:12px; align-items:center;"><input type="radio" name="${idp}_mode" value="own" ${mode==='own'?'checked':''}> Own</label>
+      ${isRegulator ? `<label style="display:flex; gap:4px; font-size:12px; align-items:center;"><input type="checkbox" id="${idp}_din" ${it.isDIN?'checked':''}> DIN</label>` : ''}
+    </div>
+    ${sizeSelectHtml}
+    ${hasThickness ? `<input type="text" id="${idp}_thickness" placeholder="Thickness e.g. 3mm" value="${escapeAttr(it.thickness||'')}" style="margin-top:6px; width:100%;">` : ''}
+    <div style="display:flex; gap:6px; margin-top:6px;">
+      <input type="text" id="${idp}_brand" placeholder="Brand" value="${escapeAttr(prefillBrand)}" style="flex:1;">
+      <input type="text" id="${idp}_model" placeholder="Model" value="${escapeAttr(prefillModel)}" style="flex:1;">
+    </div>
+    ${wasPrefilled ? `<div style="font-size:11px; color:var(--teal); margin-top:6px;">Prefilled from this client's profile — edit if this trip is different.</div>` : ''}
+  </div>`;
+}
+function openTravelerPopup(bookingId, personIndex){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  const p = b.people[personIndex];
+  if(!p) return;
+  if(!p.items) p.items = {};
+  const profile = findClientProfileByEmail(p.email);
+  const profileOwn = (profile && profile.ownEquipment) || {};
+  const age = ageFromDob(p.dob);
+  const itemsHtml = RESV_EQUIP_ITEMS.map(def=>reservationEquipItemFormHtml(p, def, profileOwn[def.key])).join('');
+  const wu = (p.weightsUsed && typeof p.weightsUsed==='object') ? p.weightsUsed : { amount:p.weightsUsed||'', unit:'kg' };
+
+  showModal(`
+    <div style="padding-right:30px;">
+      <h3>${escapeHtml(p.fullName || 'Traveler')}</h3>
+      <div style="font-size:14px; color:var(--ink-soft); margin-top:4px;">${escapeHtml(p.email || 'No email on file')}</div>
+      <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-size:13px; color:var(--ink-soft);">
+        <span><strong style="color:var(--ink);">DOB:</strong> ${p.dob ? fmtDateHuman(p.dob) : '—'}</span>
+        <span><strong style="color:var(--ink);">Age:</strong> ${age!=null ? age : '—'}</span>
+        <span><strong style="color:var(--ink);">Gender:</strong> ${escapeHtml(p.gender||'—')}</span>
+        <span><strong style="color:var(--ink);">Allergies:</strong> ${escapeHtml(p.allergies||'—')}</span>
+      </div>
+      ${profile ? `<div style="font-size:12px; color:var(--teal); margin-top:8px;">This client has a saved profile — own-equipment fields below are prefilled from it wherever this reservation doesn't already specify something.</div>` : ''}
+    </div>
+    <div class="section-title" style="margin-top:16px;">Equipment for this reservation</div>
+    <div style="display:grid; gap:10px;">${itemsHtml}</div>
+    <div class="field-grid" style="margin-top:12px;">
+      <div class="field" style="margin-bottom:0;"><label>Weights used</label>
+        <div style="display:flex; gap:6px;">
+          <input type="number" min="0" id="rsvWeightsAmount" value="${escapeAttr(wu.amount||'')}" style="flex:1;">
+          <select id="rsvWeightsUnit"><option value="kg" ${wu.unit==='kg'?'selected':''}>kg</option><option value="lb" ${wu.unit==='lb'?'selected':''}>lb</option></select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0;"><label>Nitrox</label>
+        <label style="display:flex; align-items:center; gap:6px; margin-top:8px;"><input type="checkbox" id="rsvNitrox" ${p.nitrox?'checked':''}> Requested</label>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;" data-save-reservation-equip="${b.id}" data-person-index="${personIndex}">💾 Save to this reservation</button>
+    <p style="font-size:12px; color:var(--ink-soft); margin-top:10px;">This only updates this reservation. To edit this client's general profile instead, open them from the Clients tab.</p>
+  `);
+}
+async function saveReservationEquip(bookingId, personIndex){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b || !b.people[personIndex]) return;
+  const p = b.people[personIndex];
+  if(!p.items) p.items = {};
+  RESV_EQUIP_ITEMS.forEach(def=>{
+    const idp = `rsvEq_${def.key}`;
+    const modeEl = document.querySelector(`input[name="${idp}_mode"]:checked`);
+    const it = p.items[def.key] || {};
+    it.mode = modeEl ? modeEl.value : '';
+    if(def.hasSize){
+      const sizeEl = document.getElementById(idp+'_size');
+      if(sizeEl){ it.size = sizeEl.value; it.knowSize = true; }
+    }
+    if(def.hasThickness){
+      const thickEl = document.getElementById(idp+'_thickness');
+      if(thickEl) it.thickness = thickEl.value;
+    }
+    if(def.isRegulator){
+      const dinEl = document.getElementById(idp+'_din');
+      if(dinEl) it.isDIN = dinEl.checked;
+    }
+    const brandEl = document.getElementById(idp+'_brand');
+    const modelEl = document.getElementById(idp+'_model');
+    if(brandEl) it.brand = brandEl.value;
+    if(modelEl) it.model = modelEl.value;
+    p.items[def.key] = it;
+  });
+  p.weightsUsed = {
+    amount: (document.getElementById('rsvWeightsAmount')||{}).value || '',
+    unit: (document.getElementById('rsvWeightsUnit')||{}).value || 'kg',
+  };
+  p.nitrox = (document.getElementById('rsvNitrox')||{}).checked || false;
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast('Equipment updated for this reservation.');
+  renderTab();
+  closeModal();
+}
+function sendBirthdayEmail(email){
+  const c = allClientsList().find(x=>x.email===email);
+  if(!c) return;
+  const lang = c.language==='es' ? 'es' : 'en';
+  const firstName = (c.fullName||'').split(' ')[0] || 'friend';
+  const templates = {
+    en: `Happy birthday, ${firstName}! 🎉 From all of us at Hidrosfera, we hope your day is as wonderful as a morning on the Sea of Cortez. Come back and dive, snorkel, or sail with us again soon!`,
+    es: `¡Feliz cumpleaños, ${firstName}! 🎉 De parte de todo el equipo de Hidrosfera, esperamos que tu día sea tan maravilloso como una mañana en el Mar de Cortés. ¡Ven a bucear, esnorquelear o navegar con nosotros pronto!`
+  };
+  showModal(`
+    <h3 style="padding-right:30px;" tr="Birthday message preview (${lang.toUpperCase()})">Birthday message preview (${lang.toUpperCase()})</h3>
+    <div class="field" style="margin-top:16px;"><label tr="To">To</label><input type="text" value="${escapeAttr(email)}" disabled></div>
+    <div class="field"><label tr="Message">Message</label><textarea id="bdayMessage" style="min-height:120px;">${templates[lang]}</textarea></div>
+    <button class="btn btn-primary" data-confirm-send-birthday="${escapeAttr(email)}" tr="Send">Send</button>
+  `);
+}
+function confirmSendBirthday(email){
+  showToast(`Simulated: birthday message sent to ${email}. Connect a real mail provider to send for real (see chat).`);
+  closeModal();
+}
+
+/* =======================================================================
+   PAYMENTS TAB
+   ======================================================================= */
+function paymentsData(){
+  const filter = state.paymentsFilter;
+  let total = 0, depositsTotal = 0, count = 0;
+  const byActivity = {};
+  const peopleByCategory = { scuba:0, freediving:0, snorkel:0, other:0 };
+  const includedBookings = [];
+  state.bookings.forEach(b=>{
+    if(b.status === 'cancelled') return;
+    const createdDate = (b.createdAt||'').slice(0,10);
+    if(filter.from && createdDate < filter.from) return;
+    if(filter.to && createdDate > filter.to) return;
+    let bookingTotal = 0;
+    (b.activities||[]).forEach(act=>{
+      if(filter.activityId !== 'all' && act.activityId !== filter.activityId) return;
+      const n = (act.assignedPersonIds||[]).length;
+      const amt = (act.unitPrice||0) * n;
+      bookingTotal += amt;
+      byActivity[act.activityId] = (byActivity[act.activityId]||0) + amt;
+      const a = activityById(act.activityId);
+      const cat = (a && a.divingType) ? a.divingType : 'other';
+      peopleByCategory[cat] = (peopleByCategory[cat]||0) + n;
+    });
+    if(bookingTotal > 0){
+      total += bookingTotal; depositsTotal += (b.deposit||0); count++;
+      includedBookings.push({ booking:b, relevantTotal:bookingTotal });
+    }
+  });
+  includedBookings.sort((x,y)=> new Date(y.booking.createdAt) - new Date(x.booking.createdAt));
+  return { total, depositsTotal, count, byActivity, peopleByCategory, includedBookings };
+}
+function resetPaymentsFilters(){
+  state.paymentsFilter = { activityId:'all', from:'', to:'' };
+  renderTab();
+}
+function renderPaymentsTab(){
+  const { total, depositsTotal, count, byActivity, peopleByCategory, includedBookings } = paymentsData();
+  const maxVal = Math.max(1, ...Object.values(byActivity));
+  const bars = Object.entries(byActivity).sort((a,b)=>b[1]-a[1]).map(([id,val])=>{
+    const a = activityById(id);
+    const h = Math.max(2, Math.round((val/maxVal)*100));
+    const label = a ? activityDisplayName(a) : 'Unknown';
+    return `<div class="bar-chart-col">
+      <div class="bar-chart-bar" style="height:${h}%;" title="${fmtMoney(val)}"></div>
+      <div class="bar-chart-label">${escapeHtml(label)}<br>${fmtMoney(val)}</div>
+    </div>`;
+  }).join('');
+  const totalPeople = Object.values(peopleByCategory).reduce((s,n)=>s+n,0);
+  const catLabels = { scuba:'Scuba', freediving:'Free diving', snorkel:'Snorkel', other:'Other' };
+
+  const reservationRows = includedBookings.map(({booking:b, relevantTotal})=>`
+    <tr class="table-row" data-open-booking="${b.id}">
+      <td>${new Date(b.createdAt).toLocaleDateString()}</td>
+      <td>${escapeHtml(bookingContactName(b))}</td>
+      <td style="max-width:260px; white-space:normal;">${escapeHtml(bookingActivitiesSummary(b))}</td>
+      <td><span class="badge badge-${b.status}">${b.status}</span></td>
+      <td style="text-align:right; font-family:var(--font-mono);">${fmtMoney(relevantTotal)}</td>
+    </tr>`).join('');
+
+  return `
+  <div class="page-head">
+    <div><div class="page-title" tr="Payments">Payments</div><div class="page-sub" tr="Revenue overview across all non-cancelled bookings.">Revenue overview across all non-cancelled bookings.</div></div>
+  </div>
+  <div class="toolbar">
+    <select id="paymentsActivityFilter">
+      <option value="all">All experiences</option>
+      ${state.activities.map(a=>`<option value="${a.id}" ${state.paymentsFilter.activityId===a.id?'selected':''}>${escapeHtml(activityDisplayName(a))}</option>`).join('')}
+    </select>
+    <input type="date" id="paymentsFrom" value="${state.paymentsFilter.from||''}">
+    <span style="color:var(--ink-soft); font-size:13px;">to</span>
+    <input type="date" id="paymentsTo" value="${state.paymentsFilter.to||''}">
+    <button class="btn btn-outline btn-sm" id="resetPaymentsFiltersBtn">Reset filters</button>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Total revenue</div><div class="stat-value">${fmtMoney(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Deposits collected</div><div class="stat-value">${fmtMoney(depositsTotal)}</div></div>
+    <div class="stat-card"><div class="stat-label">Bookings counted</div><div class="stat-value">${count}</div></div>
+  </div>
+  <div class="card">
+    <div class="section-title">Revenue by experience</div>
+    <div class="bar-chart">${bars || '<p style="color:var(--ink-soft);">No revenue data yet.</p>'}</div>
+  </div>
+  <div class="card">
+    <div class="section-title">People by category (${totalPeople} total)</div>
+    <div class="stat-grid" style="margin-bottom:0;">
+      ${Object.keys(catLabels).map(cat=>`
+        <div class="stat-card"><div class="stat-label">${catLabels[cat]}</div><div class="stat-value">${peopleByCategory[cat]||0}</div></div>
+      `).join('')}
+    </div>
+    <p style="font-size:12px; color:var(--ink-soft); margin-top:10px;">Category is set per activity in Activities &amp; Availability → Edit → "Diving type."</p>
+  </div>
+  <div class="card" style="padding:0; overflow-x:auto;">
+    <div class="section-title" style="padding:18px 18px 0;">Reservations included in the totals above (${includedBookings.length})</div>
+    <table>
+      <thead><tr><th>Made on</th><th>Main contact</th><th>Activities</th><th>Status</th><th style="text-align:right;">Amount</th></tr></thead>
+      <tbody>
+        ${reservationRows || `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--ink-soft);">No reservations match these filters.</td></tr>`}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* =======================================================================
+   SETTINGS TAB
+   ======================================================================= */
+function renderSettingsTab(){
+  return `
+  <div class="page-head"><div><div class="page-title" tr="Settings">Settings</div><div class="page-sub" tr="Notification email and admin password.">Notification email and admin password.</div></div></div>
+  <div class="card">
+    <div class="section-title">Notifications</div>
+    <div class="field"><label>Email to receive new-booking notifications</label><input type="email" id="settingsNotifyEmail" value="${escapeAttr(state.settings.notifyEmail||'')}"></div>
+    <button class="btn btn-primary btn-sm" id="saveNotifyEmailBtn">Save</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Admin password</div>
+    <div class="field-grid">
+      <div class="field"><label>New password</label><input type="password" id="settingsNewPassword" placeholder="Leave blank to keep current"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" id="settingsConfirmPassword"></div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="savePasswordBtn">Update password</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Payment accounts</div>
+    <p style="color:var(--ink-soft); font-size:13.5px; margin-bottom:12px;">These show up as the dropdown options when the admin records a deposit or a final payment on a booking.</p>
+    <div id="paymentAccountsList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+      ${(state.settings.paymentAccounts||[]).map((acc,i)=>`
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" data-account-index="${i}" value="${escapeAttr(acc)}" style="flex:1;">
+          <button class="icon-btn" data-remove-account="${i}">✕</button>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-outline btn-sm" id="addAccountBtn">+ Add account</button>
+      <button class="btn btn-primary btn-sm" id="saveAccountsBtn">Save accounts</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">Equipment rental pricing</div>
+    <p style="color:var(--ink-soft); font-size:13.5px; margin-bottom:12px;">Price per item, per day. Used to calculate the rental total shown to customers and on each booking. If a traveler rents more than 4 items, the full-set price is used instead of adding up each item.</p>
+    <div class="field-grid">
+      ${(()=>{
+        const ep = state.settings.equipmentPricing || {};
+        const labels = { bcd:'BCD', computer:'Dive computer', fins:'Fins', mask:'Mask', regulator:'Regulator', wetsuit:'Wetsuit' };
+        return Object.keys(labels).map(key=>`
+          <div class="field" style="margin-bottom:0;"><label>${labels[key]} (MX$/day)</label><input type="number" min="0" data-equip-price-key="${key}" value="${ep[key]!=null?ep[key]:0}"></div>
+        `).join('');
+      })()}
+      <div class="field" style="margin-bottom:0;"><label>Full set, 5+ items (MX$/day)</label><input type="number" min="0" data-equip-price-key="fullSetPrice" value="${(state.settings.equipmentPricing&&state.settings.equipmentPricing.fullSetPrice)!=null?state.settings.equipmentPricing.fullSetPrice:0}"></div>
+    </div>
+    <button class="btn btn-primary btn-sm" style="margin-top:12px;" id="saveEquipPricingBtn">Save equipment pricing</button>
+  </div>
+  <div class="card">
+    <div class="section-title">Test data</div>
+    <p style="color:var(--ink-soft); font-size:13.5px; line-height:1.6; margin-bottom:14px;">
+      The booking calendar, all-bookings table, clients, and payments tabs only show something once real bookings exist. Load a batch of realistic sample bookings (mixed statuses, dates, and a couple of birthdays this month) to explore the interface, or clear it all when you're done testing.
+    </p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" id="loadSampleDataBtn">+ Load sample bookings</button>
+      <button class="btn btn-danger btn-sm" id="clearSampleDataBtn">Clear all bookings &amp; clients</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">Integration notes</div>
+    <p style="color:var(--ink-soft); font-size:13.5px; line-height:1.6;">Real email sending, a production database, and secure server-side authentication all need a small backend — this password gate is client-side only and fine for prototyping, but see the chat conversation for exactly how to wire up the real versions.</p>
+  </div>`;
+}
+async function saveNotifyEmail(){
+  const val = document.getElementById('settingsNotifyEmail').value.trim();
+  state.settings.notifyEmail = val;
+  await storeSet(SK.settings, state.settings, true);
+  showToast('Notification email saved.');
+}
+async function saveAdminPassword(){
+  const pw = document.getElementById('settingsNewPassword').value;
+  const confirmPw = document.getElementById('settingsConfirmPassword').value;
+  if(!pw){ showToast('Enter a new password first.'); return; }
+  if(pw !== confirmPw){ showToast('Passwords do not match.'); return; }
+  state.settings.adminPassword = pw;
+  await storeSet(SK.settings, state.settings, true);
+  showToast('Admin password updated.');
+  document.getElementById('settingsNewPassword').value = '';
+  document.getElementById('settingsConfirmPassword').value = '';
+}
+
+function addPaymentAccountField(){
+  state.settings.paymentAccounts = state.settings.paymentAccounts || [];
+  state.settings.paymentAccounts.push('');
+  renderTab();
+}
+function removePaymentAccountField(idx){
+  state.settings.paymentAccounts.splice(idx, 1);
+  renderTab();
+}
+async function savePaymentAccounts(){
+  const inputs = document.querySelectorAll('[data-account-index]');
+  const accounts = Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+  state.settings.paymentAccounts = accounts;
+  await storeSet(SK.settings, state.settings, true);
+  showToast('Payment accounts saved.');
+  renderTab();
+}
+async function saveEquipmentPricing(){
+  const inputs = document.querySelectorAll('[data-equip-price-key]');
+  const pricing = {};
+  inputs.forEach(i=>{ pricing[i.dataset.equipPriceKey] = Number(i.value)||0; });
+  state.settings.equipmentPricing = pricing;
+  await storeSet(SK.settings, state.settings, true);
+  showToast('Equipment pricing saved.');
+  renderTab();
+}
+
+/* =======================================================================
+   TEST DATA GENERATOR — populates realistic sample bookings/clients so
+   the calendar, bookings table, clients, and payments tabs have
+   something to show. Purely for exploring the interface; real bookings
+   come from the customer booking site (hidrosfera-booking.html).
+   ======================================================================= */
+async function loadSampleData(){
+  if(!state.activities || state.activities.length === 0){
+    showToast('No activities found yet — open the booking site once first so activities get seeded, then try again.');
+    return;
+  }
+  const acts = state.activities.slice(0, Math.min(6, state.activities.length));
+  const firstNames = ['Ana','Carlos','Maria','John','Emily','Diego','Sophie','Luis','Grace','Miguel','Karla','Tom'];
+  const lastNames = ['Garcia','Smith','Lopez','Johnson','Martinez','Brown','Hernandez','Davis','Torres','Wilson'];
+  const nationalities = ['Mexico','United States','Canada','Spain','Germany','Argentina'];
+  const statuses = ['pending','confirmed','cancelled','done'];
+  const clientsDb = await storeGet(SK.clients, true) || {};
+  const sampleBookings = [];
+
+  function randDate(offsetMin, offsetMax){
+    const days = offsetMin + Math.floor(Math.random()*(offsetMax-offsetMin));
+    const d = new Date(TODAY); d.setDate(d.getDate()+days);
+    return d;
+  }
+  function randomPerson(forcedDobMonth, forceEmail){
+    const fn = firstNames[Math.floor(Math.random()*firstNames.length)];
+    const ln = lastNames[Math.floor(Math.random()*lastNames.length)];
+    const dobMonth = forcedDobMonth != null ? forcedDobMonth : Math.floor(Math.random()*12);
+    const dobYear = 1965 + Math.floor(Math.random()*40);
+    const dobDay = 1 + Math.floor(Math.random()*28);
+    const dob = `${dobYear}-${String(dobMonth+1).padStart(2,'0')}-${String(dobDay).padStart(2,'0')}`;
+    const gender = Math.random() > 0.5 ? 'Male' : 'Female';
+    const mkItem = (hasSize) => {
+      const mode = Math.random() > 0.3 ? 'rent' : 'own';
+      const it = { mode, brand: Math.random()>0.6?'Aqualung':'', model:'' };
+      if(hasSize){
+        it.knowSize = true;
+        it.size = hasSize==='fins' ? (gender==='Male'?'Men:M':'Women:M') : 'M';
+        it.height=''; it.heightUnit='cm'; it.weight=''; it.weightUnit='kg';
+      }
+      if(hasSize==='wetsuit') it.thickness = '3mm';
+      return it;
+    };
+    return {
+      id: uid('p'), fullName: `${fn} ${ln}`, gender,
+      nationality: nationalities[Math.floor(Math.random()*nationalities.length)],
+      dob, dobDay:String(dobDay), dobMonth:String(dobMonth+1), dobYear:String(dobYear),
+      allergies: Math.random() > 0.75 ? 'Shellfish allergy' : 'None',
+      email: forceEmail || '', language: Math.random() > 0.5 ? 'en' : 'es', notes:'',
+      weightsUsed: { amount: Math.random()>0.5 ? String(4+Math.floor(Math.random()*8)) : '', unit:'kg' },
+      nitrox: Math.random() > 0.7,
+      items: {
+        bcd: mkItem('size'), wetsuit: mkItem('wetsuit'), fins: mkItem('fins'),
+        mask: mkItem(false), regulator: Object.assign(mkItem(false), { isDIN: Math.random()>0.5 }),
+        computer: mkItem(false),
+      }
+    };
+  }
+
+  for(let i=0; i<12; i++){
+    const activity = acts[i % acts.length];
+    const status = statuses[i % statuses.length];
+    const numPeople = 1 + Math.floor(Math.random()*3);
+    const forcedBirthdayMonth = (i===2 || i===7) ? TODAY.getMonth() : null;
+    const mainEmail = `sample.${firstNames[i%firstNames.length].toLowerCase()}${i}@example.com`;
+    const mainPerson = randomPerson(forcedBirthdayMonth, mainEmail);
+    const people = [mainPerson];
+    for(let p=1; p<numPeople; p++) people.push(randomPerson());
+
+    const dateRange = status==='done' ? [-70,-4] : status==='cancelled' ? [-15,45] : [2,75];
+    const dateObj = randDate(dateRange[0], dateRange[1]);
+    let endDate = null;
+    if(Math.random() > 0.75){
+      const endObj = new Date(dateObj); endObj.setDate(endObj.getDate() + 1 + Math.floor(Math.random()*2));
+      endDate = fmtDate(endObj);
+    }
+    const unitPrice = activity.discount
+      ? (activity.discount.type==='percent' ? Math.round(activity.price*(1-activity.discount.value/100)) : Math.max(0, activity.price-activity.discount.value))
+      : activity.price;
+    const total = unitPrice * numPeople;
+    const deposit = (status==='confirmed' || status==='done') ? Math.round(total*0.3) : 0;
+    const createdAt = new Date(dateObj); createdAt.setDate(createdAt.getDate() - (6 + Math.floor(Math.random()*14)));
+
+    const booking = {
+      id: uid('bk'),
+      bookingCode: `HDS-${dateObj.getFullYear()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,
+      createdAt: createdAt.toISOString(), status,
+      pageLanguage: mainPerson.language, sameAsFirst: true,
+      mainContact: { fullName: mainPerson.fullName, gender: mainPerson.gender, nationality: mainPerson.nationality, dob: mainPerson.dob, dobDay: mainPerson.dobDay, dobMonth: mainPerson.dobMonth, dobYear: mainPerson.dobYear, allergies: mainPerson.allergies, email: mainEmail, language: mainPerson.language, notes:'' },
+      people,
+      activities: [{ activityId: activity.id, date: fmtDate(dateObj), endDate, assignedPersonIds: people.map(p=>p.id), unitPrice }],
+      total, deposit
+    };
+    sampleBookings.push(booking);
+
+    if(!clientsDb[mainEmail]) clientsDb[mainEmail] = { history: [] };
+    clientsDb[mainEmail].history.push({ date: fmtDate(dateObj), bookingCode: booking.bookingCode, snapshot: JSON.parse(JSON.stringify(mainPerson)) });
+  }
+
+  state.bookings = state.bookings.concat(sampleBookings);
+  state.clients = clientsDb;
+  await storeSet(SK.bookings, state.bookings, true);
+  await storeSet(SK.clients, state.clients, true);
+  showToast(`Loaded ${sampleBookings.length} sample bookings — check the Calendar, All Bookings, Clients, and Payments tabs.`);
+  renderTab();
+}
+
+async function clearSampleData(){
+  if(!window.confirm('This deletes every booking and client record (real or sample). Continue?')) return;
+  state.bookings = [];
+  state.clients = {};
+  await storeSet(SK.bookings, state.bookings, true);
+  await storeSet(SK.clients, state.clients, true);
+  showToast('All bookings and clients cleared.');
+  renderTab();
+}
+
+/* =======================================================================
+   GLOBAL EVENT DELEGATION
+   ======================================================================= */
+document.addEventListener('click', (e)=>{
+  const t = e.target;
+
+  const tabBtn = t.closest('[data-tab]'); if(tabBtn){ switchTab(tabBtn.dataset.tab); return; }
+  if(t.id === 'loginBtn'){ attemptLogin(); return; }
+  if(t.id === 'logoutBtn'){ logout(); return; }
+
+  const openBooking = t.closest('[data-open-booking]'); if(openBooking){ openBookingDetail(openBooking.dataset.openBooking); return; }
+  const setStatus = t.closest('[data-set-status]'); if(setStatus){ adminSetBookingStatus(setStatus.dataset.setStatus, setStatus.dataset.newStatus); return; }
+  const addPayment = t.closest('[data-add-payment]'); if(addPayment){ startAddPayment(addPayment.dataset.addPayment); return; }
+  const cancelPayment = t.closest('[data-cancel-add-payment]'); if(cancelPayment){ cancelAddPayment(state.addingPaymentFor); return; }
+  const confirmPayment = t.closest('[data-confirm-add-payment]'); if(confirmPayment){ confirmAddPayment(confirmPayment.dataset.confirmAddPayment); return; }
+  const deletePaymentBtn = t.closest('[data-delete-payment]'); if(deletePaymentBtn){ deletePayment(deletePaymentBtn.dataset.deletePayment, deletePaymentBtn.dataset.paymentId); return; }
+  const saveDiscountBtn = t.closest('[data-save-booking-discount]'); if(saveDiscountBtn){ saveBookingDiscount(saveDiscountBtn.dataset.saveBookingDiscount); return; }
+  const resendEmail = t.closest('[data-resend-email]'); if(resendEmail){ adminResendEmail(resendEmail.dataset.resendEmail); return; }
+  const exportReport = t.closest('[data-export-report]'); if(exportReport){ exportTripReport(exportReport.dataset.exportReport); return; }
+  const openTraveler = t.closest('[data-open-traveler]'); if(openTraveler){ openTravelerPopup(openTraveler.dataset.openTraveler, Number(openTraveler.dataset.personIndex)); return; }
+  const saveOwnEmail = t.closest('[data-save-own-equip-email]'); if(saveOwnEmail){ saveOwnEquipDetailsForEmail(saveOwnEmail.dataset.saveOwnEquipEmail); return; }
+  const saveReservationEquipBtn = t.closest('[data-save-reservation-equip]'); if(saveReservationEquipBtn){ saveReservationEquip(saveReservationEquipBtn.dataset.saveReservationEquip, Number(saveReservationEquipBtn.dataset.personIndex)); return; }
+  const confirmDone = t.closest('[data-confirm-mark-done]'); if(confirmDone){ confirmMarkDone(confirmDone.dataset.confirmMarkDone); return; }
+
+  const startEdit = t.closest('[data-start-edit]'); if(startEdit){ startEditBooking(startEdit.dataset.startEdit); return; }
+  const draftSave = t.closest('[data-draft-save]'); if(draftSave){ saveBookingDraft(draftSave.dataset.draftSave); return; }
+  const draftCancel = t.closest('[data-draft-cancel]'); if(draftCancel){ cancelEditBooking(draftCancel.dataset.draftCancel); return; }
+  const draftAddAct = t.closest('[data-draft-add-activity]'); if(draftAddAct){ addDraftActivity(); return; }
+  const draftRemAct = t.closest('[data-draft-remove-activity]'); if(draftRemAct){ removeDraftActivity(Number(draftRemAct.dataset.draftRemoveActivity)); return; }
+  const draftAddPerson = t.closest('[data-draft-add-person]'); if(draftAddPerson){ addDraftPerson(); return; }
+  const draftRemPerson = t.closest('[data-draft-remove-person]'); if(draftRemPerson){ removeDraftPerson(Number(draftRemPerson.dataset.draftRemovePerson)); return; }
+
+  if(t.id === 'addActivityBtn'){ openActivityEditor(null); return; }
+  const editAct = t.closest('[data-edit-activity]'); if(editAct){ openActivityEditor(editAct.dataset.editActivity); return; }
+  const saveAct = t.closest('[data-save-activity]'); if(saveAct){ saveActivityFromForm(saveAct.dataset.saveActivity, saveAct.dataset.isNew==='1'); return; }
+  const delAct = t.closest('[data-delete-activity]'); if(delAct){ if(window.confirm('Delete this activity? This cannot be undone.')) deleteActivityConfirmed(delAct.dataset.deleteActivity); return; }
+  const toggleAct = t.closest('[data-toggle-active]'); if(toggleAct){ toggleActivityActive(toggleAct.dataset.toggleActive); return; }
+  const previewAct = t.closest('[data-preview-activity]'); if(previewAct){ previewActivity(previewAct.dataset.previewActivity); return; }
+  const moveAct = t.closest('[data-move-activity]'); if(moveAct){ moveActivity(Number(moveAct.dataset.moveActivity), moveAct.dataset.moveDir); return; }
+  const manageAvail = t.closest('[data-manage-avail]'); if(manageAvail){ state.availEditingId = manageAvail.dataset.manageAvail; state.availMonth = { y: TODAY.getFullYear(), m: TODAY.getMonth() }; renderTab(); return; }
+  if(t.id === 'closeAvailEditor'){ state.availEditingId = null; renderTab(); return; }
+  const availNav = t.closest('[data-avail-nav]');
+  if(availNav){
+    let { y, m } = state.availMonth;
+    if(availNav.dataset.availNav==='prev'){ m--; if(m<0){m=11;y--;} } else { m++; if(m>11){m=0;y++;} }
+    state.availMonth = { y, m }; renderTab(); return;
+  }
+  const availDay = t.closest('[data-avail-day]'); if(availDay && !availDay.disabled){ toggleAvailabilityDay(state.availEditingId, availDay.dataset.availDay); return; }
+
+  const calNav = t.closest('[data-admin-cal-nav]');
+  if(calNav){
+    let { y, m } = state.calMonth;
+    if(calNav.dataset.adminCalNav==='prev'){ m--; if(m<0){m=11;y--;} } else { m++; if(m>11){m=0;y++;} }
+    state.calMonth = { y, m }; renderTab(); return;
+  }
+  const yearNav = t.closest('[data-year-nav-month]');
+  if(yearNav){
+    state.calMonth = { y: Number(yearNav.dataset.yearNavYear), m: Number(yearNav.dataset.yearNavMonth) };
+    renderTab();
+    window.scrollTo({top:0, behavior:'smooth'});
+    return;
+  }
+  const yearOverviewNav = t.closest('[data-year-overview-nav]');
+  if(yearOverviewNav){
+    state.calMonth = { y: state.calMonth.y + (yearOverviewNav.dataset.yearOverviewNav==='prev' ? -1 : 1), m: state.calMonth.m };
+    renderTab();
+    return;
+  }
+
+  const openClient = t.closest('[data-open-client]'); if(openClient){ openClientDetail(openClient.dataset.openClient); return; }
+  const clientSortTh = t.closest('[data-client-sort]');
+  if(clientSortTh){
+    const key = clientSortTh.dataset.clientSort;
+    if(state.clientsSort.key === key) state.clientsSort.dir = state.clientsSort.dir==='asc' ? 'desc' : 'asc';
+    else state.clientsSort = { key, dir:'asc' };
+    renderTab();
+    return;
+  }
+  const sendBday = t.closest('[data-send-birthday]'); if(sendBday){ sendBirthdayEmail(sendBday.dataset.sendBirthday); return; }
+  const confirmBday = t.closest('[data-confirm-send-birthday]'); if(confirmBday){ confirmSendBirthday(confirmBday.dataset.confirmSendBirthday); return; }
+
+  if(t.id === 'saveNotifyEmailBtn'){ saveNotifyEmail(); return; }
+  if(t.id === 'resetPaymentsFiltersBtn'){ resetPaymentsFilters(); return; }
+  if(t.id === 'savePasswordBtn'){ saveAdminPassword(); return; }
+  if(t.id === 'loadSampleDataBtn'){ loadSampleData(); return; }
+  if(t.id === 'addAccountBtn'){ addPaymentAccountField(); return; }
+  if(t.id === 'saveAccountsBtn'){ savePaymentAccounts(); return; }
+  if(t.id === 'saveEquipPricingBtn'){ saveEquipmentPricing(); return; }
+  const removeAcc = t.closest('[data-remove-account]'); if(removeAcc){ removePaymentAccountField(Number(removeAcc.dataset.removeAccount)); return; }
+  if(t.id === 'clearSampleDataBtn'){ clearSampleData(); return; }
+});
+
+document.addEventListener('change', (e)=>{
+  const t = e.target;
+  if(t.id === 'bookingsStatusFilter'){ state.bookingsFilter.status = t.value; renderTab(); return; }
+  if(t.id === 'clientsLangFilter'){ state.clientsLangFilter = t.value; renderTab(); return; }
+  if(t.matches('[data-change-booking-status]')){ adminSetBookingStatus(t.dataset.changeBookingStatus, t.value); return; }
+  if(t.id === 'paymentsActivityFilter'){ state.paymentsFilter.activityId = t.value; renderTab(); return; }
+  if(t.id === 'paymentsFrom'){ state.paymentsFilter.from = t.value; renderTab(); return; }
+  if(t.id === 'paymentsTo'){ state.paymentsFilter.to = t.value; renderTab(); return; }
+
+  if(!state.bookingDraft) return;
+  const draft = state.bookingDraft;
+
+  if(t.matches('[data-draft-activity-field]')){
+    const act = draft.activities[Number(t.dataset.activityIndex)];
+    if(!act) return;
+    const field = t.dataset.draftActivityField;
+    if(field === 'activityId') act.activityId = t.value;
+    else act[field] = t.value || null;
+    const a = activityById(act.activityId);
+    if(a) act.unitPrice = adminPerPersonPrice(a, act);
+    return;
+  }
+  if(t.matches('[data-draft-person-field]')){
+    const p = draft.people[Number(t.dataset.personIndex)];
+    if(p) p[t.dataset.draftPersonField] = t.value;
+    return;
+  }
+  if(t.matches('[data-draft-contact-field]')){
+    draft.mainContact[t.dataset.draftContactField] = t.value;
+    return;
+  }
+  if(t.matches('[data-draft-eq-mode]')){
+    const p = draft.people[Number(t.dataset.personIndex)];
+    if(!p) return;
+    if(!p.items) p.items = {};
+    const key = t.dataset.eqItem;
+    if(!p.items[key]) p.items[key] = {};
+    p.items[key].mode = t.dataset.draftEqMode;
+    refreshBookingModal(draft.id);
+    return;
+  }
+  if(t.matches('[data-draft-eq-field]')){
+    const p = draft.people[Number(t.dataset.personIndex)];
+    if(!p || !p.items) return;
+    const key = t.dataset.eqItem;
+    if(!p.items[key]) p.items[key] = {};
+    const val = t.type === 'checkbox' ? t.checked : t.value;
+    p.items[key][t.dataset.draftEqField] = val;
+    return;
+  }
+  if(t.matches('[data-draft-weights]')){
+    const p = draft.people[Number(t.dataset.personIndex)];
+    if(!p) return;
+    if(!p.weightsUsed) p.weightsUsed = { amount:'', unit:'kg' };
+    p.weightsUsed[t.dataset.draftWeights] = t.value;
+    return;
+  }
+  if(t.matches('[data-draft-hw]')){
+    const p = draft.people[Number(t.dataset.personIndex)];
+    if(!p) return;
+    if(!p.heightWeight) p.heightWeight = { height:'', heightUnit:'cm', weight:'', weightUnit:'kg' };
+    p.heightWeight[t.dataset.draftHw] = t.value;
+    return;
+  }
+  if(t.matches('[data-draft-nitrox]')){
+    const p = draft.people[Number(t.dataset.personIndex)];
+    if(p) p.nitrox = t.checked;
+    return;
+  }
+  if(t.matches('[data-draft-assign-activity]')){
+    const act = draft.activities[Number(t.dataset.draftAssignActivity)];
+    if(!act) return;
+    act.assignedPersonIds = act.assignedPersonIds || [];
+    const pid = t.dataset.assignPersonId;
+    const idx = act.assignedPersonIds.indexOf(pid);
+    if(t.checked){ if(idx === -1) act.assignedPersonIds.push(pid); }
+    else { if(idx > -1) act.assignedPersonIds.splice(idx, 1); }
+    return;
+  }
+});
+document.addEventListener('input', (e)=>{
+  const t = e.target;
+  if(t.id === 'bookingsSearch'){ state.bookingsFilter.q = t.value; renderTab(); return; }
+  if(t.id === 'clientsSearch'){ state.clientsSearch = t.value; renderTab(); return; }
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.target && e.target.id === 'adminPasswordInput' && e.key === 'Enter') attemptLogin();
+});
+
+/* =======================================================================
+   INIT
+   ======================================================================= */
+async function init(){
+  await loadAll();
+  const session = await storeGet(SESSION_KEY, false);
+  if(session && session.loggedIn){ enterApp(); }
+}
+init();
+
+</script>
+</body>
+</html>
