@@ -81,12 +81,16 @@ a{color:inherit;}
 .brand-name{ font-family:var(--font-display); font-size:22px; font-weight:600; letter-spacing:.01em; }
 .brand-tag{ font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal-lt); margin-top:2px; }
 .masthead-right{ display:flex; align-items:center; gap:18px; font-size:14px; color:var(--sand); }
-.lang-switch{ display:flex; gap:4px; background:rgba(255,255,255,.08); border-radius:999px; padding:4px; }
-.lang-switch button{
-  border:none; background:transparent; color:var(--sand); padding:6px 12px; border-radius:999px; font-size:13px; font-weight:600;
-  transition: background .2s, color .2s;
+.languageBar{ position:relative; display:flex; gap:2px; background:rgba(255,255,255,.08); border-radius:999px; padding:4px; }
+.languageBar .option{
+  position:relative; z-index:1; border:none; background:transparent; color:var(--sand); padding:6px 11px; border-radius:999px;
+  font-size:12.5px; font-weight:600; white-space:nowrap; transition: color .2s; font-family:var(--font-body);
 }
-.lang-switch button.active{ background:var(--coral); color:#fff; }
+.languageBar .option.active{ color:#fff; }
+.languageBar .slider{
+  position:absolute; top:4px; left:4px; height:calc(100% - 8px); width:calc(20% - 2px);
+  background:var(--coral); border-radius:999px; transition: transform .25s cubic-bezier(.2,.9,.25,1); z-index:0;
+}
 
 /* ============================================================
    SIGNATURE ELEMENT — the "tide line" step tracker.
@@ -433,7 +437,13 @@ main{ padding-bottom: 140px; min-height: 60vh; }
       </div>
     </div>
     <div class="masthead-right">
-      <div class="lang-switch" id="langSwitch"></div>
+      <div class="languageBar" tr-switcher>
+        <button class="chivo em option active" data-value="en" value="en" type="button">English</button>
+        <button class="chivo em option" data-value="es" value="es" type="button">Español</button>
+        <button class="chivo em option" data-value="fr" value="fr" type="button">Français</button>
+        <button class="chivo em option" data-value="jp" value="jp" type="button">日本語</button>
+        <button class="chivo em option" data-value="pt" value="pt" type="button">Português</button>
+      </div>
     </div>
   </div>
 </div>
@@ -582,6 +592,105 @@ if(!window.storage){
     };
   })();
 }
+</script>
+<script>
+/* =====================================================================
+   LANGUAGE SWITCHER — adapted from the user's own lang.js.
+   Same mechanism: any element with a `tr="..."` attribute gets its
+   innerText replaced with translations[thatExactText] whenever the
+   locale changes. Translation dictionaries are fetched from
+   /lang/{locale}.json — see the /lang/ folder shipped alongside this
+   file, and the note at the bottom of this block for what that means
+   for hosting.
+   ===================================================================== */
+const defaultLocale = "en";
+const supportedLocales = ["en", "es", "fr", "jp", "pt"];
+let locale;
+let translations = {};
+
+async function setLocale(newLocale){
+  if(newLocale === locale) return;
+  const newTranslations = await fetchTranslationsFor(newLocale);
+  locale = newLocale;
+  translations = newTranslations;
+  translatePage();
+  // Keep the app's own "preferred language" default (used for the
+  // traveler's preferred-language field and the confirmation email)
+  // in sync with whichever locale is showing on screen.
+  if(typeof state !== 'undefined'){
+    state.pageLanguage = newLocale;
+    if(state.sameAsFirst && state.mainContact) state.mainContact.language = newLocale;
+  }
+}
+async function fetchTranslationsFor(newLocale){
+  try{
+    const response = await fetch(`/lang/${newLocale}.json`);
+    if(!response.ok) throw new Error('not found');
+    return await response.json();
+  } catch(e){
+    console.warn(`Could not load /lang/${newLocale}.json — is this page hosted with a /lang/ folder at the site root? Falling back to untranslated text.`, e);
+    return {};
+  }
+}
+function translatePage(){
+  document.querySelectorAll("[tr]").forEach(el => translateElement(el));
+}
+function translateElement(element){
+  const key = element.getAttribute("tr");
+  const translation = translations[key];
+  if(translation) element.innerText = translation;
+  // If there's no entry for this key (e.g. a locale file that hasn't
+  // been filled in yet, or admin-entered content with no translation),
+  // we leave the original text in place rather than blanking it out.
+}
+function interpolate(message, vars){
+  if(!message) return message;
+  return message.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] != null) ? vars[k] : m);
+}
+function translate(key, interpolations = {}){
+  return interpolate(translations[key], interpolations);
+}
+function isSupported(loc){ return supportedLocales.indexOf(loc) > -1; }
+function supportedOrDefault(locs){ return locs.find(isSupported) || defaultLocale; }
+function browserLocales(languageCodeOnly = false){
+  return (navigator.languages || [navigator.language || defaultLocale]).map(l => languageCodeOnly ? l.split("-")[0] : l);
+}
+function initLanguageSlider(){
+  const bar = document.querySelector('.languageBar');
+  if(!bar) return () => {};
+  const options = bar.querySelectorAll('.option');
+  const slider = document.createElement('div');
+  slider.className = 'slider';
+  bar.appendChild(slider);
+  function updateSlider(index){ slider.style.transform = `translateX(${index * 100}%)`; }
+  const initialIndex = Array.from(options).findIndex(btn => btn.classList.contains('active'));
+  updateSlider(initialIndex >= 0 ? initialIndex : 0);
+  return updateSlider;
+}
+function bindLocaleSwitcher(initialValue, onUpdateSlider){
+  const switcher = document.querySelector("[tr-switcher]");
+  if(!switcher) return;
+  switcher.value = initialValue;
+  const buttons = switcher.querySelectorAll('.option');
+  buttons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+      setLocale(button.dataset.value);
+      if(typeof onUpdateSlider === 'function') onUpdateSlider(index);
+    });
+  });
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const switcher = document.querySelector("[tr-switcher]");
+  if(!switcher) return;
+  const buttons = switcher.querySelectorAll('.option');
+  const initialLocale = supportedOrDefault(browserLocales(true));
+  setLocale(initialLocale);
+  buttons.forEach(b => b.classList.toggle('active', b.dataset.value === initialLocale));
+  const updateSlider = initLanguageSlider();
+  bindLocaleSwitcher(initialLocale, updateSlider);
+});
 </script>
 <script>
 /* =====================================================================
@@ -820,10 +929,14 @@ function showToast(msg){
   host.appendChild(el);
   setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 300); }, 3200);
 }
+function applyTranslations(){
+  if(typeof translatePage === 'function') translatePage();
+}
 function showModal(innerHtml){
   const host = document.getElementById('modalHost');
   host.innerHTML = `<div class="modal-backdrop" id="modalBackdrop"><div class="modal-box">${innerHtml}</div></div>`;
   document.getElementById('modalBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='modalBackdrop') closeModal(); });
+  applyTranslations();
 }
 function closeModal(){ document.getElementById('modalHost').innerHTML=''; }
 
@@ -913,7 +1026,6 @@ function restoreFocusSelector(selector){
 function render(){
   const focusSelector = captureFocusSelector();
   renderTideTracker();
-  renderLangSwitch();
   const app = document.getElementById('app');
   const renderers = [renderExperiencesStep, renderDatesStep, renderPeopleStep, renderReviewStep, renderDoneStep];
   app.innerHTML = renderers[state.step]();
@@ -926,6 +1038,7 @@ function render(){
   renderSelectionBar();
   requestAnimationFrame(syncBarPadding);
   restoreFocusSelector(focusSelector);
+  applyTranslations();
   saveDraft();
 }
 
@@ -937,18 +1050,6 @@ function syncBarPadding(){
   } else {
     app.style.paddingBottom = '';
   }
-}
-
-function renderLangSwitch(){
-  const el = document.getElementById('langSwitch');
-  el.innerHTML = `
-    <button data-lang="en" class="${state.pageLanguage==='en'?'active':''}" tr="EN">EN</button>
-    <button data-lang="es" class="${state.pageLanguage==='es'?'active':''}" tr="ES">ES</button>`;
-  el.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=>{
-    state.pageLanguage = b.dataset.lang;
-    if(state.sameAsFirst) state.mainContact.language = state.pageLanguage;
-    render();
-  }));
 }
 
 async function saveDraft(){
@@ -965,7 +1066,13 @@ async function saveDraft(){
    STEP 1 — EXPERIENCES
    ======================================================================= */
 function activityById(id){ return state.activities.find(a=>a.id===id); }
-function activityDisplayName(a){ return (a && (a.displayName || a.name)) || ''; }
+function activityDisplayName(a, lang){
+  if(!a) return '';
+  const dn = a.displayName;
+  const l = lang || (typeof state!=='undefined' ? state.pageLanguage : 'en') || 'en';
+  if(dn && typeof dn === 'object') return dn[l] || dn.en || a.name || '';
+  return dn || a.name || ''; // legacy: displayName was a plain string, same for every language
+}
 function priceAfterDiscount(a){
   if(!a.discount) return a.price;
   if(a.discount.type==='percent') return Math.round(a.price * (1 - a.discount.value/100));
@@ -1495,7 +1602,7 @@ function renderEquipItemCard(person, def){
 
   return `
   <div class="equip-item ${mode?'checked':''}" data-field-key="eq_${key}">
-    <div style="font-weight:600; font-size:14px; margin-bottom:8px;" tr="${escapeAttr(label)}">${label} <span class="req">*</span></div>
+    <div style="font-weight:600; font-size:14px; margin-bottom:8px;"><span tr="${escapeAttr(label)}">${label}</span> <span class="req">*</span></div>
     <div class="eq-mode-toggle">
       <label><input type="radio" name="mode_${key}_${person.id}" data-eq-mode="rent" data-eq-item="${key}" data-person="${person.id}" ${mode==='rent'?'checked':''}> <span tr="Rent from us">Rent from us</span></label>
       <label><input type="radio" name="mode_${key}_${person.id}" data-eq-mode="own" data-eq-item="${key}" data-person="${person.id}" ${mode==='own'?'checked':''}> <span tr="No, bringing my own">No, bringing my own</span></label>
@@ -1524,7 +1631,7 @@ function renderEquipmentSection(person, idx){
   ${needsSharedHW ? `
   <div class="field-grid" style="margin-top:10px;" data-field-key="heightWeight">
     <div class="field">
-      <label tr="Height">Height <span class="req">*</span></label>
+      <label><span tr="Height">Height</span> <span class="req">*</span></label>
       <div style="display:flex; gap:8px;">
         <input type="number" min="0" data-hw-field="height" data-person="${person.id}" value="${hw.height}" style="flex:1;">
         <select data-hw-field="heightUnit" data-person="${person.id}" style="width:80px;">
@@ -1534,7 +1641,7 @@ function renderEquipmentSection(person, idx){
       </div>
     </div>
     <div class="field">
-      <label tr="Weight">Weight <span class="req">*</span></label>
+      <label><span tr="Weight">Weight</span> <span class="req">*</span></label>
       <div style="display:flex; gap:8px;">
         <input type="number" min="0" data-hw-field="weight" data-person="${person.id}" value="${hw.weight}" style="flex:1;">
         <select data-hw-field="weightUnit" data-person="${person.id}" style="width:80px;">
@@ -1583,7 +1690,7 @@ function composeDob(y,m,d){
   if(!y || !m || !d) return '';
   return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
-function renderDobSelects(target, targetAttr){
+function renderDobSelects(target, targetAttr, idPrefix){
   // Hydrate transient day/month/year parts from a stored ISO date the
   // first time we see it (e.g. loaded from a draft or a returning
   // client's saved profile) — after that, the three parts are the
@@ -1606,10 +1713,11 @@ function renderDobSelects(target, targetAttr){
   const yearOpts = ['<option value="" tr="Year">Year</option>'].concat(
     Array.from({length:curYear-minYear+1}, (_,i)=>curYear-i).map(yy=>`<option value="${yy}" ${Number(y)===yy?'selected':''}>${yy}</option>`)
   ).join('');
+  const p = idPrefix || 'dob';
   return `<div class="dob-row">
-    <select ${targetAttr} data-dob-unit="day">${dayOpts}</select>
-    <select ${targetAttr} data-dob-unit="month">${monthOpts}</select>
-    <select ${targetAttr} data-dob-unit="year">${yearOpts}</select>
+    <select id="${p}_day" ${targetAttr} data-dob-unit="day">${dayOpts}</select>
+    <select id="${p}_month" ${targetAttr} data-dob-unit="month">${monthOpts}</select>
+    <select id="${p}_year" ${targetAttr} data-dob-unit="year">${yearOpts}</select>
   </div>`;
 }
 
@@ -1620,13 +1728,13 @@ function renderPersonFieldsGrid(person, idx){
   return `
   <div class="field-grid">
     <div class="field" data-field-key="fullName">
-      <label tr="Full name">Full name ${nameReq?'<span class="req">*</span>':''}</label>
+      <label><span tr="Full name">Full name</span> ${nameReq?'<span class="req">*</span>':''}</label>
       <input type="text" data-person-field="fullName" data-person="${person.id}" value="${escapeAttr(person.fullName)}" placeholder="Jane Diver">
       <span class="field-error-msg hidden" tr="Full name is required">Full name is required</span>
     </div>
     <div class="field" data-field-key="gender">
-      <label tr="Gender">Gender ${genderReq?'<span class="req">*</span>':''}</label>
-      <select data-person-field="gender" data-person="${person.id}">
+      <label><span tr="Gender">Gender</span> ${genderReq?'<span class="req">*</span>':''}</label>
+      <select id="gender_${person.id}" data-person-field="gender" data-person="${person.id}">
         <option value="" tr="Select…">Select…</option>
         <option value="Male" ${gender==='Male'?'selected':''} tr="Male">Male</option>
         <option value="Female" ${gender==='Female'?'selected':''} tr="Female">Female</option>
@@ -1639,12 +1747,12 @@ function renderPersonFieldsGrid(person, idx){
       <input type="text" list="countryList" autocomplete="off" data-person-field="nationality" data-person="${person.id}" value="${escapeAttr(person.nationality)}" placeholder="Start typing a country…">
     </div>
     <div class="field" data-field-key="dob">
-      <label tr="Date of birth">Date of birth ${dobReq?'<span class="req">*</span>':''}</label>
-      ${renderDobSelects(person, `data-dob-person="${person.id}"`)}
+      <label><span tr="Date of birth">Date of birth</span> ${dobReq?'<span class="req">*</span>':''}</label>
+      ${renderDobSelects(person, `data-dob-person="${person.id}"`, `dob_${person.id}`)}
       <span class="field-error-msg hidden" tr="Date of birth is required">Date of birth is required</span>
     </div>
     <div class="field span-2" data-field-key="allergies">
-      <label tr="Allergies or dietary restrictions">Allergies or dietary restrictions ${allergiesReq?'<span class="req">*</span>':''}</label>
+      <label><span tr="Allergies or dietary restrictions">Allergies or dietary restrictions</span> ${allergiesReq?'<span class="req">*</span>':''}</label>
       <input type="text" data-person-field="allergies" data-person="${person.id}" value="${escapeAttr(person.allergies)}" placeholder="None, or e.g. shellfish allergy">
       <span class="field-error-msg hidden" tr="Please enter 'None' if not applicable">Please enter "None" if not applicable</span>
     </div>
@@ -1654,9 +1762,12 @@ function renderPersonFieldsGrid(person, idx){
     </div>
     <div class="field" data-field-key="language">
       <label tr="Preferred language">Preferred language</label>
-      <select data-person-field="language" data-person="${person.id}">
+      <select id="language_${person.id}" data-person-field="language" data-person="${person.id}">
         <option value="en" ${langDefault==='en'?'selected':''} tr="English">English</option>
         <option value="es" ${langDefault==='es'?'selected':''} tr="Español">Español</option>
+        <option value="fr" ${langDefault==='fr'?'selected':''}>Français</option>
+        <option value="jp" ${langDefault==='jp'?'selected':''}>日本語</option>
+        <option value="pt" ${langDefault==='pt'?'selected':''}>Português</option>
       </select>
     </div>
     <div class="field span-2" data-field-key="notes">
@@ -1715,7 +1826,9 @@ function renderPersonCard(person, idx){
     <div class="person-body">
       ${renderPersonFieldsGrid(person, idx)}
       <div class="section-label" tr="Rental equipment">Rental equipment</div>
-      ${renderEquipmentSection(person, idx)}
+      <div data-equip-section="${person.id}">
+        ${renderEquipmentSection(person, idx)}
+      </div>
     </div>
   </div>`;
 }
@@ -1735,7 +1848,7 @@ function renderPeopleStep(){
       <div class="person-body">
         <div class="field-grid">
           <div class="field" data-field-key="fullName" data-contact-field="1">
-            <label tr="Full name">Full name <span class="req">*</span></label>
+            <label><span tr="Full name">Full name</span> <span class="req">*</span></label>
             <input type="text" data-contact-field="fullName" value="${escapeAttr(state.mainContact.fullName)}">
             <span class="field-error-msg hidden" tr="Full name is required">Full name is required</span>
           </div>
@@ -1749,8 +1862,8 @@ function renderPeopleStep(){
           </div>
           <div class="field"><label tr="Nationality">Nationality</label><input type="text" list="countryList" autocomplete="off" data-contact-field="nationality" value="${escapeAttr(state.mainContact.nationality)}" placeholder="Start typing a country…"></div>
           <div class="field" data-field-key="dob">
-            <label tr="Date of birth">Date of birth <span class="req">*</span></label>
-            ${renderDobSelects(state.mainContact, `data-dob-contact="1"`)}
+            <label><span tr="Date of birth">Date of birth</span> <span class="req">*</span></label>
+            ${renderDobSelects(state.mainContact, `data-dob-contact="1"`, `dob_contact`)}
             <span class="field-error-msg hidden" tr="Date of birth is required">Date of birth is required</span>
           </div>
           <div class="field span-2" data-field-key="allergies">
@@ -1762,6 +1875,9 @@ function renderPeopleStep(){
             <select data-contact-field="language">
               <option value="en" ${state.mainContact.language==='en'?'selected':''} tr="English">English</option>
               <option value="es" ${state.mainContact.language==='es'?'selected':''} tr="Español">Español</option>
+              <option value="fr" ${state.mainContact.language==='fr'?'selected':''}>Français</option>
+              <option value="jp" ${state.mainContact.language==='jp'?'selected':''}>日本語</option>
+              <option value="pt" ${state.mainContact.language==='pt'?'selected':''}>Português</option>
             </select>
           </div>
           <div class="field span-2"><label tr="Notes">Notes</label><textarea data-contact-field="notes">${state.mainContact.notes}</textarea></div>
@@ -1833,7 +1949,7 @@ function equipmentCostForPerson(p){
   const days = totalDaysForPerson(p.id);
   if(days<=0) return 0;
   const rentedCount = EQUIP_ITEMS.filter(def => p.items[def.key] && p.items[def.key].mode==='rent').length;
-  if(rentedCount > 4 && state.settings.equipmentPricing.fullSetPrice){
+  if(rentedCount >= 4 && state.settings.equipmentPricing.fullSetPrice){
     return state.settings.equipmentPricing.fullSetPrice * days;
   }
   let cost = 0;
@@ -1850,7 +1966,7 @@ function equipmentRentalBreakdown(){
     const days = totalDaysForPerson(p.id);
     if(days<=0) return;
     const rentedDefs = EQUIP_ITEMS.filter(def => p.items[def.key] && p.items[def.key].mode==='rent');
-    if(rentedDefs.length > 4 && state.settings.equipmentPricing.fullSetPrice){
+    if(rentedDefs.length >= 4 && state.settings.equipmentPricing.fullSetPrice){
       fullSetCount += 1;
       fullSetCost += state.settings.equipmentPricing.fullSetPrice * days;
       return;
@@ -1861,7 +1977,7 @@ function equipmentRentalBreakdown(){
       byItem[def.key].cost += (state.settings.equipmentPricing[def.key]||0) * days;
     });
   });
-  if(fullSetCount > 0) byItem.fullSet = { count: fullSetCount, cost: fullSetCost, label: 'Full equipment set (5+ items)' };
+  if(fullSetCount > 0) byItem.fullSet = { count: fullSetCount, cost: fullSetCost, label: 'Full equipment set (4+ items)' };
   return byItem;
 }
 function equipmentGrandTotal(){ return state.people.reduce((s,p)=>s+equipmentCostForPerson(p),0); }
@@ -2209,6 +2325,18 @@ function refreshPersonCardStyle(personId){
   card.classList.toggle('is-complete', complete);
   card.classList.remove('is-invalid');
 }
+function refreshEquipmentSection(personId){
+  const p = state.people.find(x=>x.id===personId);
+  const idx = state.people.indexOf(p);
+  const container = document.querySelector(`[data-equip-section="${personId}"]`);
+  if(!p || idx === -1 || !container){ render(); return; } // fallback if something's out of sync
+  const focusSelector = captureFocusSelector();
+  container.innerHTML = renderEquipmentSection(p, idx);
+  restoreFocusSelector(focusSelector);
+  applyTranslations();
+  refreshPersonCardStyle(personId);
+  saveDraft();
+}
 function refreshMainContactCardStyle(){
   const card = document.querySelector('[data-main-contact-card]');
   if(!card) return;
@@ -2371,7 +2499,7 @@ function initGlobalListeners(){
     if(t.matches('[data-eq-mode]')){
       const p = state.people.find(x=>x.id===t.dataset.person);
       if(p) p.items[t.dataset.eqItem].mode = t.dataset.eqMode;
-      render(); return;
+      refreshEquipmentSection(t.dataset.person); return;
     }
     if(t.matches('[data-eq-field]')){
       const p = state.people.find(x=>x.id===t.dataset.person);
@@ -2379,7 +2507,7 @@ function initGlobalListeners(){
         const val = t.type === 'checkbox' ? t.checked : t.value;
         p.items[t.dataset.eqItem][t.dataset.eqField] = val;
       }
-      render(); return;
+      refreshEquipmentSection(t.dataset.person); return;
     }
     if(t.matches('[data-hw-field]')){
       const p = state.people.find(x=>x.id===t.dataset.person);
@@ -2396,7 +2524,7 @@ function initGlobalListeners(){
       if(p){
         EQUIP_ITEMS.forEach(def=>{ p.items[def.key].mode = t.checked ? 'own' : ''; });
       }
-      render(); return;
+      refreshEquipmentSection(t.dataset.allOwnEquip); return;
     }
     if(t.matches('[data-nitrox-check]')){
       const p = state.people.find(x=>x.id===t.dataset.person);

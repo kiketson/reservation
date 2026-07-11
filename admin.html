@@ -701,7 +701,13 @@ function adminPerPersonPrice(a, act){
   }
   return total;
 }
-function activityDisplayName(a){ return (a && (a.displayName || a.name)) || 'Unknown experience'; }
+function activityDisplayName(a, lang){
+  if(!a) return 'Unknown experience';
+  const dn = a.displayName;
+  const l = lang || 'en';
+  if(dn && typeof dn === 'object') return dn[l] || dn.en || a.name || 'Unknown experience';
+  return dn || a.name || 'Unknown experience';
+}
 function computeSuggestedDeposit(total){ return Math.round(Math.min((total||0) * 0.15, 4000)); }
 function bookingCollected(b){
   return (b.payments||[]).reduce((s,p)=>{
@@ -850,7 +856,7 @@ function buildBookingViewHtml(b){
       <div class="field-grid" style="margin-bottom:10px;">
         <div class="field" style="margin-bottom:0;"><label>Manual price override (optional)</label><input type="number" min="0" id="bookingPriceOverride" placeholder="Leave blank to use the calculated total" value="${b.priceOverride!=null?b.priceOverride:''}" ${isLocked?'disabled':''}></div>
       </div>
-      <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Use this to correct the total — e.g. if the equipment rental (including the 5+ item full-set rate) needs a manual adjustment for this specific reservation. It replaces the calculated total before the discount below is applied.</p>
+      <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Use this to correct the total — e.g. if the equipment rental (including the 4+ item full-set rate) needs a manual adjustment for this specific reservation. It replaces the calculated total before the discount below is applied.</p>
       <div class="field-grid" style="margin-bottom:14px;">
         <div class="field" style="margin-bottom:0;"><label>Discount type</label>
           <select id="bookingDiscountType" ${isLocked?'disabled':''}>
@@ -921,6 +927,7 @@ function buildBookingViewHtml(b){
         <option value="done" ${b.status==='done'?'selected':''}>Done</option>
       </select>
       ${!isLocked ? `<button class="btn btn-outline" data-start-edit="${b.id}">✎ Edit booking</button>` : ''}
+      <button class="btn btn-outline" data-view-as-sent="${b.id}">👁 View as sent to client</button>
       <button class="btn btn-outline" data-resend-email="${b.id}">✉ Send updated version to client</button>
       ${(b.status==='confirmed' || b.status==='done') ? `<button class="btn btn-outline" data-export-report="${b.id}">⬇ Export trip report (PDF)</button>` : ''}
     </div>
@@ -1300,6 +1307,16 @@ function adminResendEmail(bookingId){
   if(!b) return;
   showModal(buildBookingEmailPreviewHtml(b));
 }
+function viewBookingAsSent(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  showModal(`
+    <div style="padding-right:30px; margin-bottom:12px;">
+      <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--ink-soft);">Read-only review — reflects the booking's current information</div>
+    </div>
+    ${buildBookingEmailPreviewHtml(b)}
+  `);
+}
 
 /* =======================================================================
    TRIP REPORT (PDF) — opens a print-formatted page and triggers the
@@ -1523,7 +1540,6 @@ function buildActivityFormHtml(a, isNew){
   return `
   <h3 style="padding-right:30px;">${isNew?'Add new activity':'Edit activity'}</h3>
   <div class="field-grid" style="margin-top:18px;">
-    <div class="field"><label>Display name (shown to customers)</label><input type="text" id="af_displayname" value="${escapeAttr(a.displayName||a.name||'')}"></div>
     <div class="field"><label>Internal name (for admin lists/search — can be short)</label><input type="text" id="af_name" value="${escapeAttr(a.name)}" placeholder="e.g. Whale Shark"></div>
     <div class="field"><label>Category</label><input type="text" id="af_category" value="${escapeAttr(a.category)}" placeholder="Diving, Snorkeling…"></div>
     <div class="field"><label>Diving type (for the Payments breakdown)</label>
@@ -1564,6 +1580,19 @@ function buildActivityFormHtml(a, isNew){
     </div>
     <div class="field"><label>Nitrox price per tank (MX$)</label><input type="number" min="0" id="af_nitrox_price" value="${a.nitroxPricePerTank||200}"></div>
     <div class="field"><label>Tanks per day</label><input type="number" min="1" id="af_tanks_per_day" value="${a.tanksPerDay||1}"></div>
+  </div>
+  <div class="section-title" style="margin-top:18px;">Display name shown to customers, by language</div>
+  <p style="color:var(--ink-soft); font-size:12.5px; margin-bottom:10px;">Leave a language blank to fall back to English. The customer site shows whichever one matches the language they've selected.</p>
+  <div class="field-grid">
+    ${(()=>{
+      const dn = (a.displayName && typeof a.displayName === 'object') ? a.displayName : { en: a.displayName || a.name || '' };
+      const langs = [['en','English'],['es','Español'],['fr','Français'],['jp','日本語'],['pt','Português']];
+      return langs.map(([code,label])=>`
+        <div class="field" style="margin-bottom:0;"><label>${label}${code==='en'?' (default)':''}</label><input type="text" id="af_displayname_${code}" value="${escapeAttr(dn[code]||'')}" placeholder="${code==='en'?'e.g. Whale Shark Snorkel':''}"></div>
+      `).join('');
+    })()}
+  </div>
+  <div class="field-grid" style="margin-top:14px;">
     <div class="field" style="grid-column:1/-1;"><label>Short description (shown on the card)</label><textarea id="af_shortdesc">${escapeHtml(a.shortDesc||'')}</textarea></div>
     <div class="field" style="grid-column:1/-1;"><label>Long description (shown in "More information")</label><textarea id="af_longdesc">${escapeHtml(a.longDesc||'')}</textarea></div>
     <div class="field"><label>Highlights (one per line)</label><textarea id="af_highlights">${(a.highlights||[]).join('\n')}</textarea></div>
@@ -1587,7 +1616,13 @@ async function saveActivityFromForm(activityId, isNew){
   const activityData = {
     id: activityId,
     name: get('af_name').trim() || 'Untitled experience',
-    displayName: get('af_displayname').trim() || get('af_name').trim() || 'Untitled experience',
+    displayName: {
+      en: get('af_displayname_en').trim() || get('af_name').trim() || 'Untitled experience',
+      es: get('af_displayname_es').trim(),
+      fr: get('af_displayname_fr').trim(),
+      jp: get('af_displayname_jp').trim(),
+      pt: get('af_displayname_pt').trim(),
+    },
     category: get('af_category').trim() || 'General',
     divingType: get('af_divingtype') || null,
     icon: get('af_icon').trim() || '🌊',
@@ -1875,15 +1910,30 @@ function openClientDetail(email){
 
   showModal(`
     <div style="padding-right:30px;">
-      <h3>${escapeHtml(snap.fullName || 'Unknown')} <span style="font-family:var(--font-mono); font-size:12px; color:var(--teal); font-weight:600;">${(snap.language||'en').toUpperCase()}</span>${snap.nationality ? ` <span style="font-size:13px; color:var(--ink-soft); font-weight:400;">· ${escapeHtml(snap.nationality)}</span>` : ''}</h3>
-      <div style="font-size:14px; color:var(--ink-soft); margin-top:4px;">${escapeHtml(email)}</div>
-      <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-size:13px; color:var(--ink-soft);">
-        <span><strong style="color:var(--ink);">DOB:</strong> ${snap.dob ? fmtDateHuman(snap.dob) : '—'}</span>
-        <span><strong style="color:var(--ink);">Age:</strong> ${age!=null ? age : '—'}</span>
-        <span><strong style="color:var(--ink);">Gender:</strong> ${escapeHtml(snap.gender||'—')}</span>
-        <span><strong style="color:var(--ink);">Allergies:</strong> ${escapeHtml(snap.allergies||'—')}</span>
+      <h3 style="margin-bottom:2px;">Edit client profile</h3>
+      <div style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Editing the profile linked to <strong>${escapeHtml(email)}</strong>. This updates their most recent visit record — it doesn't rewrite the history of past trips.</div>
+      <div class="field-grid">
+        <div class="field" style="margin-bottom:0;"><label>Full name</label><input type="text" id="cpFullName" value="${escapeAttr(snap.fullName||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Gender</label>
+          <select id="cpGender">
+            <option value="" ${!snap.gender?'selected':''}>—</option>
+            <option value="Male" ${snap.gender==='Male'?'selected':''}>Male</option>
+            <option value="Female" ${snap.gender==='Female'?'selected':''}>Female</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Date of birth</label><input type="date" id="cpDob" value="${snap.dob||''}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Nationality</label><input type="text" id="cpNationality" value="${escapeAttr(snap.nationality||'')}"></div>
+        <div class="field" style="margin-bottom:0;"><label>Preferred language</label>
+          <select id="cpLanguage">
+            <option value="en" ${(!snap.language||snap.language==='en')?'selected':''}>English</option>
+            <option value="es" ${snap.language==='es'?'selected':''}>Español</option>
+          </select>
+        </div>
+        <div class="field span-2" style="margin-bottom:0;"><label>Allergies / dietary restrictions</label><input type="text" id="cpAllergies" value="${escapeAttr(snap.allergies||'')}"></div>
       </div>
-      <div style="font-size:13px; color:var(--ink-soft); margin-top:10px;"><strong style="color:var(--ink);">Latest rental equipment:</strong> ${escapeHtml(equipmentSummaryLineAdmin(snap))}</div>
+      <div style="font-size:13px; color:var(--ink-soft); margin-top:12px;">Age: ${age!=null ? age : '—'} (calculated from date of birth)</div>
+      <button class="btn btn-primary btn-sm" style="margin-top:10px;" data-save-client-profile="${escapeAttr(email)}">Save profile</button>
+      <div style="font-size:13px; color:var(--ink-soft); margin-top:14px;"><strong style="color:var(--ink);">Latest rental equipment:</strong> ${escapeHtml(equipmentSummaryLineAdmin(snap))}</div>
     </div>
     <p style="font-size:12px; color:var(--ink-soft); margin-top:16px;">The section below is a general reference note about this client's own gear — it doesn't replace or get overwritten by what's recorded on any specific reservation.</p>
     ${ownEquipFieldsHtml(snap, 'own')}
@@ -1902,6 +1952,33 @@ function readOwnEquipmentFromForm(idPrefix){
     mask: { brand: val(idPrefix+'MaskBrand'), model: val(idPrefix+'MaskModel') },
     regulator: { type: val(idPrefix+'RegType'), brand: val(idPrefix+'RegBrand'), model: val(idPrefix+'RegModel') },
   };
+}
+async function saveClientProfile(email){
+  const rec = state.clients[email];
+  if(!rec || !rec.history.length) return;
+  const latest = rec.history[rec.history.length-1];
+  const val = id => (document.getElementById(id)||{}).value || '';
+  Object.assign(latest.snapshot, {
+    fullName: val('cpFullName'),
+    gender: val('cpGender'),
+    dob: val('cpDob'),
+    nationality: val('cpNationality'),
+    language: val('cpLanguage'),
+    allergies: val('cpAllergies'),
+  });
+  await storeSet(SK.clients, state.clients, true);
+  // mirror onto any bookings where this person appears
+  state.bookings.forEach(b=>{
+    (b.people||[]).forEach(p=>{
+      if(p.email && p.email.toLowerCase()===email.toLowerCase()){
+        Object.assign(p, { fullName: val('cpFullName'), gender: val('cpGender'), dob: val('cpDob'), nationality: val('cpNationality'), language: val('cpLanguage'), allergies: val('cpAllergies') });
+      }
+    });
+  });
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast('Client profile saved.');
+  renderTab();
+  openClientDetail(email);
 }
 async function saveOwnEquipDetailsForEmail(email){
   const rec = state.clients[email];
@@ -2213,7 +2290,7 @@ function renderSettingsTab(){
   </div>
   <div class="card">
     <div class="section-title">Equipment rental pricing</div>
-    <p style="color:var(--ink-soft); font-size:13.5px; margin-bottom:12px;">Price per item, per day. Used to calculate the rental total shown to customers and on each booking. If a traveler rents more than 4 items, the full-set price is used instead of adding up each item.</p>
+    <p style="color:var(--ink-soft); font-size:13.5px; margin-bottom:12px;">Price per item, per day. Used to calculate the rental total shown to customers and on each booking. If a traveler rents 4 or more items, the full-set price is used instead of adding up each item.</p>
     <div class="field-grid">
       ${(()=>{
         const ep = state.settings.equipmentPricing || {};
@@ -2222,7 +2299,7 @@ function renderSettingsTab(){
           <div class="field" style="margin-bottom:0;"><label>${labels[key]} (MX$/day)</label><input type="number" min="0" data-equip-price-key="${key}" value="${ep[key]!=null?ep[key]:0}"></div>
         `).join('');
       })()}
-      <div class="field" style="margin-bottom:0;"><label>Full set, 5+ items (MX$/day)</label><input type="number" min="0" data-equip-price-key="fullSetPrice" value="${(state.settings.equipmentPricing&&state.settings.equipmentPricing.fullSetPrice)!=null?state.settings.equipmentPricing.fullSetPrice:0}"></div>
+      <div class="field" style="margin-bottom:0;"><label>Full set, 4+ items (MX$/day)</label><input type="number" min="0" data-equip-price-key="fullSetPrice" value="${(state.settings.equipmentPricing&&state.settings.equipmentPricing.fullSetPrice)!=null?state.settings.equipmentPricing.fullSetPrice:0}"></div>
     </div>
     <button class="btn btn-primary btn-sm" style="margin-top:12px;" id="saveEquipPricingBtn">Save equipment pricing</button>
   </div>
@@ -2420,9 +2497,11 @@ document.addEventListener('click', (e)=>{
   const confirmPayment = t.closest('[data-confirm-add-payment]'); if(confirmPayment){ confirmAddPayment(confirmPayment.dataset.confirmAddPayment); return; }
   const deletePaymentBtn = t.closest('[data-delete-payment]'); if(deletePaymentBtn){ deletePayment(deletePaymentBtn.dataset.deletePayment, deletePaymentBtn.dataset.paymentId); return; }
   const saveDiscountBtn = t.closest('[data-save-booking-discount]'); if(saveDiscountBtn){ saveBookingDiscount(saveDiscountBtn.dataset.saveBookingDiscount); return; }
+  const viewAsSent = t.closest('[data-view-as-sent]'); if(viewAsSent){ viewBookingAsSent(viewAsSent.dataset.viewAsSent); return; }
   const resendEmail = t.closest('[data-resend-email]'); if(resendEmail){ adminResendEmail(resendEmail.dataset.resendEmail); return; }
   const exportReport = t.closest('[data-export-report]'); if(exportReport){ exportTripReport(exportReport.dataset.exportReport); return; }
   const openTraveler = t.closest('[data-open-traveler]'); if(openTraveler){ openTravelerPopup(openTraveler.dataset.openTraveler, Number(openTraveler.dataset.personIndex)); return; }
+  const saveClientProfileBtn = t.closest('[data-save-client-profile]'); if(saveClientProfileBtn){ saveClientProfile(saveClientProfileBtn.dataset.saveClientProfile); return; }
   const saveOwnEmail = t.closest('[data-save-own-equip-email]'); if(saveOwnEmail){ saveOwnEquipDetailsForEmail(saveOwnEmail.dataset.saveOwnEquipEmail); return; }
   const saveReservationEquipBtn = t.closest('[data-save-reservation-equip]'); if(saveReservationEquipBtn){ saveReservationEquip(saveReservationEquipBtn.dataset.saveReservationEquip, Number(saveReservationEquipBtn.dataset.personIndex)); return; }
   const confirmDone = t.closest('[data-confirm-mark-done]'); if(confirmDone){ confirmMarkDone(confirmDone.dataset.confirmMarkDone); return; }
