@@ -624,7 +624,7 @@ async function setLocale(newLocale){
 }
 async function fetchTranslationsFor(newLocale){
   try{
-    const response = await fetch(`/reservation/lang/${newLocale}.json`);
+    const response = await fetch(`/res/lang/${newLocale}.json`);
     if(!response.ok) throw new Error('not found');
     return await response.json();
   } catch(e){
@@ -1114,7 +1114,7 @@ function renderExperiencesStep(){
     return `
     <div class="activity-card ${selected?'is-selected':''}" data-activity-id="${a.id}">
       <div class="activity-media" style="${mediaStyle} cursor:pointer;" data-select-activity="${a.id}" title="Select this experience">
-        <span class="activity-category" tr="${escapeAttr(a.category)}">${a.category}</span>
+        <span class="activity-category" tr="${escapeAttr(localizedField(a,'category'))}">${localizedField(a,'category')}</span>
         ${!a.image ? `<span class="activity-media-icon">${a.icon}</span>` : ''}
       </div>
       <div class="activity-body">
@@ -1160,7 +1160,7 @@ function showMoreInfoModal(activityId){
   showModal(`
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px;">
       <div>
-        <span class="activity-category" style="position:static; display:inline-block;" tr="${escapeAttr(a.category)}">${a.category}</span>
+        <span class="activity-category" style="position:static; display:inline-block;" tr="${escapeAttr(localizedField(a,'category'))}">${localizedField(a,'category')}</span>
         <h3 style="margin-top:10px;" tr="${escapeAttr(activityDisplayName(a))}">${a.icon} ${activityDisplayName(a)}</h3>
       </div>
       <button class="icon-btn" onclick="closeModal()" tr="✕">✕</button>
@@ -1598,13 +1598,24 @@ function finSizeOptionsForGender(gender, currentVal){
 }
 
 const EQUIP_ITEMS = [
-  { key:'bcd',       label:'BCD',            hasSize:true  },
-  { key:'computer',  label:'Dive computer',  hasSize:false },
+  { key:'bcd',       label:'BCD',            hasSize:true,  scubaOnly:true  },
+  { key:'computer',  label:'Dive computer',  hasSize:false, scubaOnly:true  },
   { key:'fins',      label:'Fins',           hasSize:true, isFins:true },
   { key:'mask',      label:'Mask',           hasSize:false },
-  { key:'regulator', label:'Regulator',      hasSize:false, isRegulator:true },
+  { key:'regulator', label:'Regulator',      hasSize:false, isRegulator:true, scubaOnly:true },
   { key:'wetsuit',   label:'Wetsuit',        hasSize:true },
 ];
+function bookingIncludesScuba(){
+  // BCD / dive computer / regulator only make sense when at least one
+  // booked experience is scuba diving. Evaluated across the whole
+  // booking (per client), not per single activity — if someone books
+  // a dive AND a snorkel trip together, they still get the full list.
+  return state.bookingActivities.some(ba=>{ const a=activityById(ba.activityId); return a && a.divingType==='scuba'; });
+}
+function visibleEquipItems(){
+  const scuba = bookingIncludesScuba();
+  return EQUIP_ITEMS.filter(def => scuba || !def.scubaOnly);
+}
 
 function renderEquipItemCard(person, def){
   const { key, label, hasSize, isFins, isRegulator } = def;
@@ -1686,7 +1697,7 @@ function renderEquipmentSection(person, idx){
   </div>` : ''}
 
   <div style="display:grid; gap:12px; margin-top:14px;">
-    ${EQUIP_ITEMS.map(def=>renderEquipItemCard(person, def)).join('')}
+    ${visibleEquipItems().map(def=>renderEquipItemCard(person, def)).join('')}
   </div>
 
   <div class="field-grid" style="margin-top:14px;">
@@ -1759,6 +1770,10 @@ function renderPersonFieldsGrid(person, idx){
   const nameReq = idx === 0, dobReq = idx === 0, genderReq = idx > 0, allergiesReq = idx > 0;
   return `
   <div class="field-grid">
+    <div class="field" data-field-key="email">
+      <label tr="Email">Email</label>
+      <input type="email" data-person-field="email" data-person="${person.id}" value="${escapeAttr(person.email)}" placeholder="jane@example.com" data-email-blur="${person.id}">
+    </div>
     <div class="field" data-field-key="fullName">
       <label><span tr="Full name">Full name</span> ${nameReq?'<span class="req">*</span>':''}</label>
       <input type="text" data-person-field="fullName" data-person="${person.id}" value="${escapeAttr(person.fullName)}" placeholder="Jane Diver">
@@ -1788,10 +1803,6 @@ function renderPersonFieldsGrid(person, idx){
       <input type="text" data-person-field="allergies" data-person="${person.id}" value="${escapeAttr(person.allergies)}" placeholder="None, or e.g. shellfish allergy">
       <span class="field-error-msg hidden" tr="Please enter 'None' if not applicable">Please enter "None" if not applicable</span>
     </div>
-    <div class="field" data-field-key="email">
-      <label tr="Email">Email</label>
-      <input type="email" data-person-field="email" data-person="${person.id}" value="${escapeAttr(person.email)}" placeholder="jane@example.com" data-email-blur="${person.id}">
-    </div>
     <div class="field" data-field-key="language">
       <label tr="Preferred language">Preferred language</label>
       <select id="language_${person.id}" data-person-field="language" data-person="${person.id}">
@@ -1807,7 +1818,7 @@ function renderPersonFieldsGrid(person, idx){
       <textarea data-person-field="notes" data-person="${person.id}" placeholder="Anything else we should know?">${person.notes}</textarea>
     </div>
     <div class="field span-2 checkbox-row" style="margin-top:2px;">
-      <input type="checkbox" id="allOwn_${person.id}" data-all-own-equip="${person.id}" ${EQUIP_ITEMS.every(d=>person.items[d.key].mode==='own')?'checked':''}>
+      <input type="checkbox" id="allOwn_${person.id}" data-all-own-equip="${person.id}" ${visibleEquipItems().every(d=>person.items[d.key].mode==='own')?'checked':''}>
       <label for="allOwn_${person.id}" tr="I'm bringing all my own equipment">I'm bringing all my own equipment</label>
     </div>
   </div>
@@ -1828,7 +1839,7 @@ function isPersonComplete(p, idx){
   const required = requiredFieldsForIndex(idx);
   const contactOk = required.every(f=> String(p[f]||'').trim() !== '');
   if(!contactOk) return false;
-  for(const def of EQUIP_ITEMS){
+  for(const def of visibleEquipItems()){
     if(!isItemComplete(p.items[def.key], def.hasSize)) return false;
   }
   const needsSharedHW = (p.items.bcd.mode==='rent' && p.items.bcd.size==='unknown') || (p.items.wetsuit.mode==='rent' && p.items.wetsuit.size==='unknown');
@@ -1980,12 +1991,12 @@ function totalDaysForPerson(personId){
 function equipmentCostForPerson(p){
   const days = totalDaysForPerson(p.id);
   if(days<=0) return 0;
-  const rentedCount = EQUIP_ITEMS.filter(def => p.items[def.key] && p.items[def.key].mode==='rent').length;
+  const rentedCount = visibleEquipItems().filter(def => p.items[def.key] && p.items[def.key].mode==='rent').length;
   if(rentedCount >= 4 && state.settings.equipmentPricing.fullSetPrice){
     return state.settings.equipmentPricing.fullSetPrice * days;
   }
   let cost = 0;
-  EQUIP_ITEMS.forEach(def=>{
+  visibleEquipItems().forEach(def=>{
     const it = p.items[def.key];
     if(it && it.mode==='rent') cost += (state.settings.equipmentPricing[def.key]||0) * days;
   });
@@ -1997,7 +2008,7 @@ function equipmentRentalBreakdown(){
   state.people.forEach(p=>{
     const days = totalDaysForPerson(p.id);
     if(days<=0) return;
-    const rentedDefs = EQUIP_ITEMS.filter(def => p.items[def.key] && p.items[def.key].mode==='rent');
+    const rentedDefs = visibleEquipItems().filter(def => p.items[def.key] && p.items[def.key].mode==='rent');
     if(rentedDefs.length >= 4 && state.settings.equipmentPricing.fullSetPrice){
       fullSetCount += 1;
       fullSetCost += state.settings.equipmentPricing.fullSetPrice * days;
@@ -2038,7 +2049,7 @@ function equipmentItemSummary(key, it){
 }
 function equipmentSummaryLine(p){
   const labels = { bcd:'BCD', computer:'Dive computer', fins:'Fins', mask:'Mask', regulator:'Regulator', wetsuit:'Wetsuit' };
-  const parts = EQUIP_ITEMS.map(def=>{
+  const parts = visibleEquipItems().map(def=>{
     const it = p.items[def.key];
     if(!it || it.mode !== 'rent') return null; // only rental items shown here — own gear isn't listed
     const sizeText = equipmentItemSummary(def.key, it);
@@ -2254,7 +2265,7 @@ function validatePeopleStep(){
       clearFieldError(wrap);
       if(String(p[f]||'').trim()===''){ markFieldError(wrap); ok=false; if(!firstBad) firstBad=wrap; }
     });
-    EQUIP_ITEMS.forEach(def=>{
+    visibleEquipItems().forEach(def=>{
       const wrap = card.querySelector(`[data-field-key="eq_${def.key}"]`);
       if(wrap) clearFieldError(wrap);
       if(!isItemComplete(p.items[def.key], def.hasSize)){
@@ -2554,7 +2565,7 @@ function initGlobalListeners(){
     if(t.matches('[data-all-own-equip]')){
       const p = state.people.find(x=>x.id===t.dataset.allOwnEquip);
       if(p){
-        EQUIP_ITEMS.forEach(def=>{ p.items[def.key].mode = t.checked ? 'own' : ''; });
+        visibleEquipItems().forEach(def=>{ p.items[def.key].mode = t.checked ? 'own' : ''; });
       }
       refreshEquipmentSection(t.dataset.allOwnEquip); return;
     }
