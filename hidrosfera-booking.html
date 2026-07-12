@@ -234,8 +234,8 @@ main{ padding-bottom: 140px; min-height: 60vh; }
    CALENDAR (dates step)
    ============================================================ */
 .dates-activity-block{
-  background:var(--foam); border-radius:var(--radius-l); padding:26px; margin-bottom:26px; box-shadow:var(--shadow-card);
-  border:2px solid transparent;
+  background:var(--foam); border-radius:var(--radius-l); padding:26px; margin:0 auto 26px; box-shadow:var(--shadow-card);
+  border:2px solid transparent; max-width:420px;
 }
 .dates-activity-block.has-date{ border-color: var(--ok); }
 .dates-activity-block.missing-date{ border-color: var(--err); animation: shake .4s; }
@@ -246,8 +246,8 @@ main{ padding-bottom: 140px; min-height: 60vh; }
 .date-status-badge{ font-family:var(--font-mono); font-size:11.5px; padding:5px 12px; border-radius:999px; font-weight:600; letter-spacing:.03em; }
 .date-status-badge.pending{ background:var(--err-bg); color:var(--err); }
 .date-status-badge.done{ background:var(--ok-bg); color:var(--ok); }
-.cal-wrap{ display:flex; gap:24px; flex-wrap:wrap; }
-.cal-grid-wrap{ flex:0 1 300px; max-width:300px; }
+.cal-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; max-width:340px; margin:0 auto; }
+.cal-grid-wrap{ width:100%; }
 .cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 .cal-head button{ background:var(--sand); border:none; width:26px; height:26px; border-radius:50%; font-size:14px; color:var(--deep); }
 .cal-head button:disabled{ opacity:.25; cursor:not-allowed; }
@@ -270,7 +270,7 @@ main{ padding-bottom: 140px; min-height: 60vh; }
 .cal-legend{ display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:12px; color:var(--ink-soft); }
 .cal-legend span{ display:inline-flex; align-items:center; gap:6px; }
 .legend-dot{ width:10px; height:10px; border-radius:3px; display:inline-block; }
-.cal-side{ width:220px; }
+.cal-side{ width:100%; }
 .selected-date-display{ background:var(--sand); border-radius:var(--radius-m); padding:16px; text-align:center; }
 .selected-date-display .label{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); }
 .selected-date-display .value{ font-family:var(--font-display); font-size:20px; color:var(--deep); margin-top:6px; }
@@ -1452,13 +1452,13 @@ function renderDatesStep(){
         <span class="date-status-badge ${hasDate?'done':'pending'}" tr="${hasDate ? 'Date selected' : 'Date required'}">${hasDate ? '✓ Date selected' : 'Date required'}</span>
       </div>
       <div class="cal-wrap">
-        ${renderCalendar(ba.activityId, ba)}
         <div class="cal-side">
           <div class="selected-date-display">
             <div class="label" tr="${isRange?'Selected dates':'Selected date'}">${isRange?'Selected dates':'Selected date'}</div>
             <div class="value" style="${isRange?'font-size:15px;':''}">${rangeLabel}</div>
           </div>
         </div>
+        ${renderCalendar(ba.activityId, ba)}
       </div>
     </div>`;
   }).join('');
@@ -2094,6 +2094,7 @@ function buildResumeHtml(statusLabel, statusTone){
       <div class="lg-row"><span class="k" tr="Date of birth">Date of birth</span><span class="v">${p.dob||'—'}</span></div>
       <div class="lg-row"><span class="k" tr="Allergies / dietary">Allergies / dietary</span><span class="v">${p.allergies||'—'}</span></div>
       <div class="lg-row"><span class="k" tr="Rental equipment">Rental equipment</span><span class="v">${equipmentSummaryLine(p)}</span></div>
+      ${equipmentCostForPerson(p) > 0 ? `<div class="lg-row"><span class="k" tr="Equipment cost">Equipment cost</span><span class="v">${fmtMoney(equipmentCostForPerson(p))}</span></div>` : ''}
       ${p.notes ? `<div class="lg-row"><span class="k" tr="Notes">Notes</span><span class="v">${p.notes}</span></div>` : ''}
     </div>`).join('');
 
