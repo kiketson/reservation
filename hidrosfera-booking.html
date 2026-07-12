@@ -624,7 +624,7 @@ async function setLocale(newLocale){
 }
 async function fetchTranslationsFor(newLocale){
   try{
-    const response = await fetch(`/lang/${newLocale}.json`);
+    const response = await fetch(`/reservation/lang/${newLocale}.json`);
     if(!response.ok) throw new Error('not found');
     return await response.json();
   } catch(e){
