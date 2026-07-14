@@ -86,6 +86,7 @@ main{ padding:32px 0 80px; }
 .field label{ font-size:12px; font-weight:600; color:var(--ink-soft); }
 .field input, .field select, .field textarea{
   border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-s); padding:10px 12px; font-size:14px; color:var(--ink);
+  width:100%; box-sizing:border-box;
 }
 .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(28,124,130,.15); }
 .field-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
@@ -127,7 +128,7 @@ tr.table-row:hover{ background:rgba(28,124,130,.05); cursor:pointer; }
 
 .modal-backdrop{ position:fixed; inset:0; background:rgba(8,32,40,.55); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
 .modal-box{ background:#fff; border-radius:var(--radius-l); max-width:760px; width:100%; max-height:90vh; overflow-y:auto; padding:30px; box-shadow:var(--shadow-pop); position:relative; margin:auto; }
-.modal-close{ position:absolute; top:16px; right:16px; background:var(--sand); border:none; width:32px; height:32px; border-radius:50%; font-size:15px; color:var(--deep); }
+.modal-close{ position:sticky; top:16px; display:block; margin:0 0 -32px auto; background:var(--sand); border:none; width:32px; height:32px; border-radius:50%; font-size:15px; color:var(--deep); z-index:5; box-shadow:0 2px 8px rgba(11,61,76,.15); }
 
 .toast{ position:fixed; top:20px; right:24px; background:var(--deep); color:#fff; padding:14px 20px; border-radius:var(--radius-s); box-shadow:var(--shadow-pop); z-index:300; font-size:14px; max-width:320px; animation:toastIn .3s ease; }
 @keyframes toastIn{ from{opacity:0; transform:translateX(20px);} to{opacity:1; transform:translateX(0);} }
@@ -429,10 +430,14 @@ function showToast(msg){
 }
 function showModal(html){
   const host = document.getElementById('modalHost');
+  const existingBox = host.querySelector('.modal-box');
+  const prevScroll = existingBox ? existingBox.scrollTop : 0;
   host.innerHTML = `<div class="modal-backdrop" id="modalBackdrop"><div class="modal-box">
     <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
     ${html}
   </div></div>`;
+  const newBox = host.querySelector('.modal-box');
+  if(newBox && prevScroll) newBox.scrollTop = prevScroll;
 }
 function closeModal(){ document.getElementById('modalHost').innerHTML = ''; }
 
@@ -540,6 +545,7 @@ function switchTab(key){ state.tab = key; renderTabs(); renderTab(); window.scro
 
 function renderTab(){
   const main = document.getElementById('adminMain');
+  const prevScroll = window.scrollY;
   const renderers = {
     calendar: renderCalendarTab,
     bookings: renderBookingsTab,
@@ -549,6 +555,7 @@ function renderTab(){
     settings: renderSettingsTab,
   };
   main.innerHTML = renderers[state.tab] ? renderers[state.tab]() : '';
+  if(prevScroll) window.scrollTo(0, prevScroll);
 }
 
 /* =======================================================================
@@ -891,7 +898,7 @@ function buildBookingViewHtml(b){
     </div>`).join('');
 
   const isLocked = b.status === 'done';
-  const suggested = computeSuggestedDeposit(bookingTotalAfterDiscount(b));
+  const suggested = (b.depositOverride != null) ? Number(b.depositOverride) : computeSuggestedDeposit(bookingTotalAfterDiscount(b));
   const firstAct = (b.activities||[])[0];
   const firstActActivity = firstAct ? activityById(firstAct.activityId) : null;
   const tripMeta = [
@@ -915,6 +922,10 @@ function buildBookingViewHtml(b){
       <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Main contact</div><div style="font-weight:600;">${escapeHtml(bookingContactName(b))}</div></div>
       <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Email</div><div>${escapeHtml((b.mainContact&&b.mainContact.email)||'—')}</div></div>
       <div><div style="font-size:11px; color:var(--ink-soft); font-family:var(--font-mono); text-transform:uppercase;">Language</div><div>${(b.pageLanguage||'en').toUpperCase()}</div></div>
+    </div>
+    <div class="field checkbox-row" style="margin-bottom:18px;">
+      <input type="checkbox" id="notifyAllEmails_${b.id}" data-toggle-notify-all="${b.id}" ${b.notifyAllEmails?'checked':''} ${isLocked?'disabled':''}>
+      <label for="notifyAllEmails_${b.id}">Send emails to every traveler's email on this reservation, not just the main contact's${(()=>{ const emails=(b.people||[]).map(p=>p.email).filter(Boolean); return emails.length>1 ? ` (${emails.join(', ')})` : ''; })()}</label>
     </div>
 
     <div style="font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--teal); margin-bottom:8px;">Activities</div>
@@ -940,6 +951,10 @@ function buildBookingViewHtml(b){
               <span class="k">Rental equipment</span>
               <input type="number" min="0" id="amtEquipment" value="${bd.equipmentTotal}" style="width:120px; text-align:right; border:1.5px solid var(--line); border-radius:6px; padding:5px 8px;">
             </div>
+            <div class="lg-row" style="align-items:center; margin-top:6px; border-top:1.5px dashed var(--line); padding-top:8px;">
+              <span class="k">Deposit</span>
+              <input type="number" min="0" id="amtDeposit" value="${suggested}" style="width:120px; text-align:right; border:1.5px solid var(--line); border-radius:6px; padding:5px 8px;">
+            </div>
             <div style="display:flex; gap:10px; margin-top:12px;">
               <button class="btn btn-primary btn-sm" data-save-amounts="${b.id}">💾 Save</button>
               <button class="btn btn-outline btn-sm" data-cancel-edit-amounts="1">Cancel</button>
@@ -951,8 +966,17 @@ function buildBookingViewHtml(b){
           ${rows}
           <div class="lg-row"><span class="k">Rental equipment</span><span class="v">${fmtMoney(bd.equipmentTotal)}${bd.equipmentHasOverride?' <span style="color:var(--coral-dk); font-size:11px;">(adjusted)</span>':''}</span></div>
           <div class="lg-row" style="font-weight:700; font-size:15px; border-top:1.5px solid var(--line); margin-top:4px; padding-top:8px;"><span class="k">Grand total</span><span class="v">${fmtMoney(bd.grandTotal)}</span></div>
+          <div class="lg-row"><span class="k">Deposit</span><span class="v">${fmtMoney(suggested)}${b.depositOverride!=null?' <span style="color:var(--coral-dk); font-size:11px;">(adjusted)</span>':''}</span></div>
           ${!isLocked ? `<button class="btn btn-outline btn-sm" style="margin-top:10px;" data-start-edit-amounts="${b.id}">✎ Edit amounts</button>` : ''}`;
       })()}
+      ${b.discount ? `
+      <div class="lg-row" style="background:var(--sand); border-radius:8px; padding:8px 12px; margin-top:12px;">
+        <span class="k">Active discount</span>
+        <span class="v" style="display:flex; align-items:center; gap:10px;">
+          ${b.discount.type==='percent' ? b.discount.value+'% off' : fmtMoney(b.discount.value)+' off'}
+          ${!isLocked ? `<button class="icon-btn icon-btn-delete" data-remove-discount="${b.id}" title="Remove discount">✕</button>` : ''}
+        </span>
+      </div>` : ''}
       <div class="field-grid" style="margin-top:16px; margin-bottom:14px;">
         <div class="field" style="margin-bottom:0;"><label>Discount type</label>
           <select id="bookingDiscountType" ${isLocked?'disabled':''}>
@@ -1059,7 +1083,7 @@ function buildBookingEditHtml(draft){
             </label>`).join('')}
         </div>
       </div>
-      <button class="icon-btn" style="margin-top:8px;" data-draft-remove-activity="${i}">✕ Remove this activity</button>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;" data-draft-remove-activity="${i}">✕ Remove this activity</button>
     </div>`;
   }).join('');
 
@@ -1071,11 +1095,11 @@ function buildBookingEditHtml(draft){
     let sizeControl = '';
     if(hasSize){
       sizeControl = kind === 'fins'
-        ? `<select data-draft-eq-field="size" data-eq-item="${key}" data-person-index="${i}">
+        ? `<select data-draft-eq-field="size" data-eq-item="${key}" data-person-index="${i}" style="width:100%; box-sizing:border-box; margin-top:6px;">
              <option value="" ${!it.size?'selected':''}>Select size…</option>
              ${finSizeOptionsAdmin(p.gender, it.size)}
            </select>`
-        : `<select data-draft-eq-field="size" data-eq-item="${key}" data-person-index="${i}">
+        : `<select data-draft-eq-field="size" data-eq-item="${key}" data-person-index="${i}" style="width:100%; box-sizing:border-box; margin-top:6px;">
              <option value="" ${!it.size?'selected':''}>Select size…</option>
              ${SIZE_RANGE.map(s=>`<option value="${s}" ${it.size===s?'selected':''}>${s}</option>`).join('')}
              <option value="unknown" ${it.size==='unknown'?'selected':''}>Unknown (see height/weight)</option>
@@ -1084,17 +1108,18 @@ function buildBookingEditHtml(draft){
     return `
     <div style="border:1px solid var(--line); border-radius:8px; padding:10px;">
       <div style="font-weight:600; font-size:12.5px; margin-bottom:6px;">${label}</div>
-      <div style="display:flex; gap:10px; margin-bottom:6px;">
+      <div style="display:flex; gap:14px; flex-wrap:wrap;">
         <label style="display:flex; align-items:center; gap:4px; font-size:11.5px;"><input type="radio" name="draft_mode_${key}_${i}" data-draft-eq-mode="rent" data-eq-item="${key}" data-person-index="${i}" ${it.mode==='rent'?'checked':''}> Rent</label>
         <label style="display:flex; align-items:center; gap:4px; font-size:11.5px;"><input type="radio" name="draft_mode_${key}_${i}" data-draft-eq-mode="own" data-eq-item="${key}" data-person-index="${i}" ${it.mode==='own'?'checked':''}> Own</label>
-        ${key==='regulator' && it.mode==='own' ? `<select data-draft-eq-field="regType" data-eq-item="regulator" data-person-index="${i}" style="font-size:11.5px; padding:4px 6px;"><option value="">Type…</option><option value="DIN" ${it.regType==='DIN'?'selected':''}>DIN</option><option value="Yoke" ${it.regType==='Yoke'?'selected':''}>Yoke</option></select>` : ''}
       </div>
+      ${key==='regulator' && it.mode==='own' ? `<select data-draft-eq-field="regType" data-eq-item="regulator" data-person-index="${i}" style="width:100%; box-sizing:border-box; margin-top:6px; font-size:12px; padding:6px 8px;"><option value="">Type…</option><option value="DIN" ${it.regType==='DIN'?'selected':''}>DIN</option><option value="Yoke" ${it.regType==='Yoke'?'selected':''}>Yoke</option></select>` : ''}
       ${sizeControl}
-      ${key==='wetsuit' ? `<input type="text" placeholder="Thickness e.g. 3mm" data-draft-eq-field="thickness" data-eq-item="wetsuit" data-person-index="${i}" value="${escapeAttr(it.thickness||'')}" style="margin-top:6px; width:100%;">` : ''}
-      <div style="display:flex; gap:6px; margin-top:6px;">
-        <input type="text" placeholder="Brand" data-draft-eq-field="brand" data-eq-item="${key}" data-person-index="${i}" value="${escapeAttr(it.brand||'')}" style="flex:1;">
-        <input type="text" placeholder="Model" data-draft-eq-field="model" data-eq-item="${key}" data-person-index="${i}" value="${escapeAttr(it.model||'')}" style="flex:1;">
-      </div>
+      ${key==='wetsuit' ? `<input type="text" placeholder="Thickness e.g. 3mm" data-draft-eq-field="thickness" data-eq-item="wetsuit" data-person-index="${i}" value="${escapeAttr(it.thickness||'')}" style="margin-top:6px; width:100%; box-sizing:border-box;">` : ''}
+      ${it.mode==='own' ? `
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+        <input type="text" placeholder="Brand" data-draft-eq-field="brand" data-eq-item="${key}" data-person-index="${i}" value="${escapeAttr(it.brand||'')}" style="width:100%; box-sizing:border-box;">
+        <input type="text" placeholder="Model" data-draft-eq-field="model" data-eq-item="${key}" data-person-index="${i}" value="${escapeAttr(it.model||'')}" style="width:100%; box-sizing:border-box;">
+      </div>` : ''}
     </div>`;
   };
 
@@ -1127,7 +1152,7 @@ function buildBookingEditHtml(draft){
           <div class="field" style="margin-bottom:0;"><label>Height (if size unknown for BCD/wetsuit)</label>
             <div style="display:flex; gap:6px;">
               <input type="number" min="0" data-draft-hw="height" data-person-index="${i}" value="${(p.heightWeight&&p.heightWeight.height)||''}" style="flex:1;">
-              <select data-draft-hw="heightUnit" data-person-index="${i}">
+              <select data-draft-hw="heightUnit" data-person-index="${i}" style="flex:0 0 68px; width:68px;">
                 <option value="cm" ${(!p.heightWeight||p.heightWeight.heightUnit==='cm')?'selected':''}>cm</option>
                 <option value="in" ${p.heightWeight&&p.heightWeight.heightUnit==='in'?'selected':''}>in</option>
               </select>
@@ -1136,7 +1161,7 @@ function buildBookingEditHtml(draft){
           <div class="field" style="margin-bottom:0;"><label>Weight (if size unknown for BCD/wetsuit)</label>
             <div style="display:flex; gap:6px;">
               <input type="number" min="0" data-draft-hw="weight" data-person-index="${i}" value="${(p.heightWeight&&p.heightWeight.weight)||''}" style="flex:1;">
-              <select data-draft-hw="weightUnit" data-person-index="${i}">
+              <select data-draft-hw="weightUnit" data-person-index="${i}" style="flex:0 0 68px; width:68px;">
                 <option value="kg" ${(!p.heightWeight||p.heightWeight.weightUnit==='kg')?'selected':''}>kg</option>
                 <option value="lb" ${p.heightWeight&&p.heightWeight.weightUnit==='lb'?'selected':''}>lb</option>
               </select>
@@ -1145,7 +1170,7 @@ function buildBookingEditHtml(draft){
           <div class="field" style="margin-bottom:0;"><label>Weights used (admin — after the trip)</label>
             <div style="display:flex; gap:6px;">
               <input type="number" min="0" data-draft-weights="amount" data-person-index="${i}" value="${(p.weightsUsed&&p.weightsUsed.amount)||''}" style="flex:1;">
-              <select data-draft-weights="unit" data-person-index="${i}">
+              <select data-draft-weights="unit" data-person-index="${i}" style="flex:0 0 68px; width:68px;">
                 <option value="kg" ${(!p.weightsUsed||p.weightsUsed.unit==='kg')?'selected':''}>kg</option>
                 <option value="lb" ${p.weightsUsed&&p.weightsUsed.unit==='lb'?'selected':''}>lb</option>
               </select>
@@ -1360,6 +1385,15 @@ async function saveBookingDiscount(bookingId){
   renderTab();
   refreshBookingModal(bookingId);
 }
+async function removeBookingDiscount(bookingId){
+  const b = state.bookings.find(x=>x.id===bookingId);
+  if(!b) return;
+  b.discount = null;
+  await storeSet(SK.bookings, state.bookings, true);
+  showToast('Discount removed.');
+  renderTab();
+  refreshBookingModal(bookingId);
+}
 function startEditAmounts(bookingId){
   state.editingAmountsFor = bookingId;
   refreshBookingModal(bookingId);
@@ -1382,6 +1416,10 @@ async function saveAmounts(bookingId){
   const equipVal = equipEl ? Number(equipEl.value) : bd.computedEquipment;
   if(equipVal !== bd.computedEquipment) overrides.equipment = equipVal;
   b.amountOverrides = overrides;
+  const computedDeposit = computeSuggestedDeposit(bookingTotalAfterDiscount(b));
+  const depositEl = document.getElementById('amtDeposit');
+  const depositVal = depositEl ? Number(depositEl.value) : computedDeposit;
+  b.depositOverride = (depositVal !== computedDeposit) ? depositVal : null;
   await storeSet(SK.bookings, state.bookings, true);
   state.editingAmountsFor = null;
   showToast('Amounts updated.');
@@ -1390,7 +1428,7 @@ async function saveAmounts(bookingId){
 }
 function buildClientFacingResumeHtml(b, statusLabel, statusTone){
   const bd = bookingCostBreakdown(b);
-  const deposit = computeSuggestedDeposit(bookingTotalAfterDiscount(b));
+  const deposit = (b.depositOverride != null) ? Number(b.depositOverride) : computeSuggestedDeposit(bookingTotalAfterDiscount(b));
 
   const activityRows = bd.activityLines.map(l=>{
     const act = (b.activities||[]).find(a=>a.activityId===l.activityId);
@@ -1422,6 +1460,13 @@ function buildClientFacingResumeHtml(b, statusLabel, statusTone){
       <div style="font-family:var(--font-mono); font-size:12px; opacity:.8; margin-top:4px;">Baja California Sur, México</div>
       <div class="lg-status" style="${statusTone==='ok'?'background:var(--ok-bg); color:var(--ok);':statusTone==='err'?'background:var(--err-bg); color:var(--err);':''}">${escapeHtml(statusLabel)}</div>
       <div style="font-family:var(--font-mono); font-size:12px; margin-top:10px; opacity:.85;">Booking #${escapeHtml(b.bookingCode)}</div>
+      <div style="font-family:var(--font-mono); font-size:11px; margin-top:6px; opacity:.75;">Sent to: ${escapeHtml((()=>{
+        if(b.notifyAllEmails){
+          const emails = [...new Set((b.people||[]).map(p=>p.email).filter(Boolean))];
+          return emails.length ? emails.join(', ') : ((b.mainContact&&b.mainContact.email)||'—');
+        }
+        return (b.mainContact&&b.mainContact.email)||'—';
+      })())}</div>
     </div>
     <div class="legal-body">
       <div class="lg-section">
@@ -1441,8 +1486,10 @@ function buildClientFacingResumeHtml(b, statusLabel, statusTone){
       <div class="lg-section">
         <div class="lg-section-title">Cost breakdown</div>
         <div class="lg-row"><span class="k">Rental equipment (all travelers)</span><span class="v">${fmtMoney(bd.equipmentTotal)}</span></div>
+        ${b.discount ? `<div class="lg-row"><span class="k">Subtotal</span><span class="v">${fmtMoney(bd.grandTotal)}</span></div>
+        <div class="lg-row" style="color:var(--coral-dk);"><span class="k">Discount</span><span class="v">${b.discount.type==='percent' ? b.discount.value+'% off' : '−'+fmtMoney(b.discount.value)}</span></div>` : ''}
       </div>
-      <div class="lg-total-row"><span>Estimated total</span><span>${fmtMoney(bookingTotalAfterDiscount(b))}</span></div>
+      <div class="lg-total-row"><span>Total</span><span>${fmtMoney(bookingTotalAfterDiscount(b))}</span></div>
       <div class="lg-row" style="margin-top:6px;"><span class="k">Deposit to confirm booking</span><span class="v">${fmtMoney(deposit)}</span></div>
       <div class="lg-row"><span class="k">Collected so far</span><span class="v">${fmtMoney(bookingCollected(b))}</span></div>
     </div>
@@ -1899,10 +1946,14 @@ async function toggleAvailabilityDay(activityId, iso){
 /* =======================================================================
    CLIENTS (CRM) TAB — with birthday reminders
    ======================================================================= */
+function latestHistoryEntry(rec){
+  if(!rec || !rec.history || !rec.history.length) return null;
+  return rec.history.reduce((best, h) => (!best || (h.date||'') > (best.date||'')) ? h : best, null);
+}
 function allClientsList(){
   return Object.keys(state.clients).map(email=>{
     const rec = state.clients[email] || { history: [] };
-    const latest = rec.history[rec.history.length-1] || {};
+    const latest = latestHistoryEntry(rec) || {};
     const snap = latest.snapshot || {};
     return {
       email, fullName: snap.fullName || '—', dob: snap.dob || '', language: snap.language || 'en',
@@ -2064,7 +2115,7 @@ function ownEquipFieldsHtml(snap, idPrefix){
 function openClientDetail(email){
   const rec = state.clients[email];
   if(!rec) return;
-  const latest = rec.history[rec.history.length-1] || {};
+  const latest = latestHistoryEntry(rec) || {};
   const snap = latest.snapshot || {};
   const age = ageFromDob(snap.dob);
 
@@ -2087,7 +2138,14 @@ function openClientDetail(email){
   showModal(`
     <div style="padding-right:30px;">
       <h3 style="margin-bottom:2px;">Edit client profile</h3>
-      <div style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">Editing the profile linked to <strong>${escapeHtml(email)}</strong>. This updates their most recent visit record — it doesn't rewrite the history of past trips.</div>
+      <div style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">This updates their most recent visit record — it doesn't rewrite the history of past trips.</div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>Email</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" readonly value="${escapeAttr(email)}" onclick="this.select()" style="flex:1; font-family:var(--font-mono); font-size:13px;">
+          <a class="btn btn-outline btn-sm" style="flex-shrink:0;" href="mailto:${encodeURIComponent(email)}">✉ Send email</a>
+        </div>
+      </div>
       <div class="field-grid">
         <div class="field" style="margin-bottom:0;"><label>Full name</label><input type="text" id="cpFullName" value="${escapeAttr(snap.fullName||'')}"></div>
         <div class="field" style="margin-bottom:0;"><label>Gender</label>
@@ -2132,7 +2190,7 @@ function readOwnEquipmentFromForm(idPrefix){
 async function saveClientProfile(email){
   const rec = state.clients[email];
   if(!rec || !rec.history.length) return;
-  const latest = rec.history[rec.history.length-1];
+  const latest = latestHistoryEntry(rec);
   const val = id => (document.getElementById(id)||{}).value || '';
   Object.assign(latest.snapshot, {
     fullName: val('cpFullName'),
@@ -2164,7 +2222,7 @@ async function saveOwnEquipDetailsForEmail(email){
     amount: (document.getElementById('ownWeightsAmount')||{}).value || '',
     unit: (document.getElementById('ownWeightsUnit')||{}).value || 'kg',
   };
-  const latest = rec.history[rec.history.length-1];
+  const latest = latestHistoryEntry(rec);
   latest.snapshot.ownEquipment = ownEquipment;
   latest.snapshot.weightsUsed = weightsUsed;
   await storeSet(SK.clients, state.clients, true);
@@ -2191,7 +2249,7 @@ function findClientProfileByEmail(email){
   if(!email) return null;
   const rec = state.clients[email.toLowerCase()];
   if(!rec || !rec.history.length) return null;
-  return rec.history[rec.history.length-1].snapshot;
+  return latestHistoryEntry(rec).snapshot;
 }
 function reservationEquipItemFormHtml(p, def, profileOwn){
   const { key, label, hasSize, isFins, isRegulator, hasThickness } = def;
@@ -2301,9 +2359,10 @@ async function saveReservationEquip(bookingId, personIndex){
   };
   p.nitrox = (document.getElementById('rsvNitrox')||{}).checked || false;
   await storeSet(SK.bookings, state.bookings, true);
+  await syncBookingPeopleToClientDb(b);
   showToast('Equipment updated for this reservation.');
   renderTab();
-  closeModal();
+  openBookingDetail(bookingId);
 }
 function sendBirthdayEmail(email){
   const c = allClientsList().find(x=>x.email===email);
@@ -2673,6 +2732,7 @@ document.addEventListener('click', (e)=>{
   const confirmPayment = t.closest('[data-confirm-add-payment]'); if(confirmPayment){ confirmAddPayment(confirmPayment.dataset.confirmAddPayment); return; }
   const deletePaymentBtn = t.closest('[data-delete-payment]'); if(deletePaymentBtn){ deletePayment(deletePaymentBtn.dataset.deletePayment, deletePaymentBtn.dataset.paymentId); return; }
   const saveDiscountBtn = t.closest('[data-save-booking-discount]'); if(saveDiscountBtn){ saveBookingDiscount(saveDiscountBtn.dataset.saveBookingDiscount); return; }
+  const removeDiscountBtn = t.closest('[data-remove-discount]'); if(removeDiscountBtn){ removeBookingDiscount(removeDiscountBtn.dataset.removeDiscount); return; }
   const startEditAmountsBtn = t.closest('[data-start-edit-amounts]'); if(startEditAmountsBtn){ startEditAmounts(startEditAmountsBtn.dataset.startEditAmounts); return; }
   const cancelEditAmountsBtn = t.closest('[data-cancel-edit-amounts]'); if(cancelEditAmountsBtn){ cancelEditAmounts(state.editingAmountsFor); return; }
   const saveAmountsBtn = t.closest('[data-save-amounts]'); if(saveAmountsBtn){ saveAmounts(saveAmountsBtn.dataset.saveAmounts); return; }
@@ -2771,6 +2831,11 @@ document.addEventListener('click', (e)=>{
 document.addEventListener('change', (e)=>{
   const t = e.target;
   if(t.id === 'bookingsStatusFilter'){ state.bookingsFilter.status = t.value; renderTab(); return; }
+  if(t.matches('[data-toggle-notify-all]')){
+    const b = state.bookings.find(x=>x.id===t.dataset.toggleNotifyAll);
+    if(b){ b.notifyAllEmails = t.checked; storeSet(SK.bookings, state.bookings, true); }
+    return;
+  }
   if(t.matches('[data-preview-lang]')){ previewActivity(t.dataset.previewLang, t.value); return; }
   if(t.id === 'clientsLangFilter'){ state.clientsLangFilter = t.value; renderTab(); return; }
   if(t.matches('[data-change-booking-status]')){ adminSetBookingStatus(t.dataset.changeBookingStatus, t.value); return; }

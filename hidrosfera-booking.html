@@ -109,6 +109,9 @@ a{color:inherit;}
   border-bottom:1px solid var(--line);
   box-shadow: 0 4px 16px rgba(11,61,76,.06);
 }
+@media (max-width:640px){
+  .tideband{ position:static; }
+}
 .tideband-inner{ position:relative; padding: 18px 28px 10px; max-width:1180px; margin:0 auto; }
 .tide-svg{ width:100%; height:34px; display:block; }
 .tide-steps{ display:flex; justify-content:space-between; margin-top:2px; }
@@ -216,6 +219,8 @@ button.selection-chip:hover{ background:rgba(255,255,255,.18); }
 .bar-back-btn-hidden{ visibility:hidden; }
 @media (min-width:900px){
   .selection-bar{ left:15%; right:15%; width:70%; bottom:18px; border-radius:24px; box-shadow:0 16px 50px rgba(0,0,0,.35); }
+  .selection-chip{ font-size:19.5px; padding:9px 18px; gap:9px; max-width:min(420px, 80vw); border-radius:21px; }
+  .selection-chip button{ font-size:22px; }
 }
 @media (max-width:520px){
   .selection-bar-buttons{ justify-content:center; }
@@ -299,12 +304,13 @@ button.selection-chip:hover{ background:rgba(255,255,255,.18); }
   display:flex; align-items:center; gap:12px; background:var(--foam); border-radius:var(--radius-m); padding:16px 20px; margin-bottom:24px; box-shadow:var(--shadow-card);
 }
 .checkbox-row{ display:flex; flex-direction:row; align-items:flex-start; gap:10px; }
+.field.checkbox-row{ display:flex; flex-direction:row; align-items:flex-start; gap:10px; }
 .checkbox-row input[type=checkbox]{ margin-top:2px; width:18px; height:18px; accent-color:var(--coral); flex-shrink:0; }
 .checkbox-row label{ font-size:14px; line-height:1.4; }
 
 .person-card{
   background:var(--foam); border-radius:var(--radius-l); box-shadow:var(--shadow-card); margin-bottom:22px; overflow:hidden;
-  border:2px solid transparent; transition:border-color .3s ease;
+  border:2px solid transparent; transition:border-color .3s ease; scroll-margin-top:110px;
 }
 .person-card.is-complete{ border-color: var(--ok); }
 .person-card.is-invalid{ border-color: var(--err); }
@@ -316,6 +322,7 @@ button.selection-chip:hover{ background:rgba(255,255,255,.18); }
 }
 .person-card.is-complete .person-badge{ background: var(--ok); }
 .person-title{ font-family:var(--font-display); font-size:17px; color:var(--deep); }
+.person-main-contact-tag{ font-size:11px; font-family:var(--font-mono); color:var(--teal); font-weight:600; letter-spacing:.04em; margin-top:2px; }
 .person-status{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .person-status.ok{ color:var(--ok); }
 .person-status.pending{ color:var(--ink-soft); }
@@ -406,6 +413,7 @@ button.selection-chip:hover{ background:rgba(255,255,255,.18); }
 .lg-row .k{ color:var(--ink-soft); }
 .lg-row .v{ font-weight:600; text-align:right; }
 .lg-activity-card{ border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:12px; }
+.lg-activity-card-warn{ border-color:var(--err); background:var(--err-bg); }
 .lg-activity-card h4{ font-size:15px; color:var(--deep); margin-bottom:6px; }
 .lg-total-row{ display:flex; justify-content:space-between; font-size:20px; font-family:var(--font-display); color:var(--deep); padding-top:14px; border-top:2px solid var(--deep); margin-top:8px; }
 .modify-link{ font-family:var(--font-mono); font-size:11px; text-transform:uppercase; color:var(--coral); background:none; border:1px solid var(--coral); border-radius:999px; padding:4px 10px; }
@@ -894,6 +902,7 @@ const STEPS = [
 const state = {
   step: 0,
   pageLanguage: 'en',
+  notifyAllEmails: false,
   activities: [],
   availability: {},
   settings: {},
@@ -1082,7 +1091,8 @@ async function saveDraft(){
     step: state.step, pageLanguage: state.pageLanguage,
     selectedActivityIds: state.selectedActivityIds, bookingActivities: state.bookingActivities,
     sameAsFirst: state.sameAsFirst, mainContact: state.mainContact, people: state.people,
-    clientAssignments: state.clientAssignments, furthestStepReached: state.furthestStepReached
+    clientAssignments: state.clientAssignments, furthestStepReached: state.furthestStepReached,
+    notifyAllEmails: state.notifyAllEmails,
   }, false);
 }
 
@@ -1209,6 +1219,13 @@ function ageFromDob(dob){
   return age;
 }
 function personDisplayName(p, idx){ return p.fullName && p.fullName.trim() ? p.fullName.trim() : `Traveler ${idx+1}`; }
+function personDisplayNameShort(p){
+  const name = (p.fullName||'').trim();
+  if(!name) return name;
+  const parts = name.split(/\s+/).filter(Boolean);
+  if(parts.length <= 1) return parts[0] || '';
+  return parts[0] + ' ' + parts.slice(1).map(w => w[0].toUpperCase() + '.').join(' ');
+}
 
 function renderSelectionBar(){
   const bar = document.getElementById('selectionBar');
@@ -1897,13 +1914,16 @@ function renderPersonCard(person, idx){
   const complete = isPersonComplete(person, idx);
   const collapsed = !!state.collapsed[person.id];
   const prog = personProgress(person, idx);
+  const showCompactName = state.people.length > 1 && isSmallScreen();
+  const displayName = person.fullName ? (showCompactName ? personDisplayNameShort(person) : person.fullName) : ('Traveler ' + (idx+1));
   return `
   <div class="person-card ${complete?'is-complete':''} ${collapsed?'is-collapsed':''}" data-person-card="${person.id}">
     <div class="person-head">
       <div class="person-head-left" data-toggle-collapse="${person.id}">
         <div class="person-badge">${idx+1}</div>
         <div>
-          <div class="person-title" tr="Traveler ${idx+1}${isMain?' — Main Contact':''}">${person.fullName || ('Traveler ' + (idx+1))}${isMain?' <span style="font-size:11px; font-family:var(--font-mono); color:var(--teal); margin-left:6px;">MAIN CONTACT</span>':''}</div>
+          <div class="person-title" tr="Traveler ${idx+1}">${escapeHtml(displayName)}</div>
+          ${isMain ? `<div class="person-main-contact-tag" tr="Main Contact">MAIN CONTACT</div>` : ''}
           <div class="person-status ${complete?'ok':'pending'}">
             <span tr="${complete?'Complete':'Incomplete'}">${complete?'✓ Complete':'Incomplete'}</span>
             <span class="person-progress-count">${prog.done} of ${prog.total} items</span>
@@ -2153,7 +2173,8 @@ function personSummaryLine(p){
   const total = personTotalCost(p);
   if(numExperiences === 0) return `No experiences assigned yet = ${fmtMoneyLong(total)}`;
   const label = numExperiences === 1 ? activityDisplayName(activityById(actIds[0])) : `${numExperiences} Experiences`;
-  return `${label} for ${days} day${days!==1?'s':''} and ${numRentals} rental${numRentals!==1?'s':''} = ${fmtMoneyLong(total)}`;
+  const rentalsPart = numRentals > 0 ? ` and ${numRentals} rental${numRentals!==1?'s':''}` : '';
+  return `${label} for ${days} day${days!==1?'s':''}${rentalsPart} = ${fmtMoneyLong(total)}`;
 }
 
 function equipmentItemSummary(key, it){
@@ -2201,8 +2222,10 @@ function buildResumeHtml(statusLabel, statusTone, interactive){
     </div>`;
   }).join('');
 
-  const peopleRows = state.people.map((p,i)=>`
-    <div class="lg-activity-card">
+  const peopleRows = state.people.map((p,i)=>{
+    const unassigned = personActivityIds(p).length === 0;
+    return `
+    <div class="lg-activity-card ${unassigned ? 'lg-activity-card-warn' : ''}">
       <h4>${p.fullName || 'Traveler '+(i+1)}</h4>
       <div class="lg-row"><span class="k" tr="Gender">Gender</span><span class="v">${p.gender||'—'}</span></div>
       <div class="lg-row"><span class="k" tr="Nationality">Nationality</span><span class="v">${p.nationality||'—'}</span></div>
@@ -2211,7 +2234,8 @@ function buildResumeHtml(statusLabel, statusTone, interactive){
       <div class="lg-row"><span class="k" tr="Rental equipment">Rental equipment</span><span class="v">${equipmentSummaryLine(p)}</span></div>
       ${p.notes ? `<div class="lg-row"><span class="k" tr="Notes">Notes</span><span class="v">${p.notes}</span></div>` : ''}
       <div class="lg-row" style="font-weight:700; margin-top:4px; border-top:1px dashed var(--line); padding-top:6px;"><span class="k" tr="Total for this traveler">Total for this traveler</span><span class="v">${personSummaryLine(p)}</span></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   const equipBreakdown = equipmentRentalBreakdown();
   const nitroxTotal = nitroxGrandTotal();
@@ -2297,6 +2321,11 @@ function renderReviewStep(){
       <span class="eyebrow" tr="Step 4 of 5">Step 4 of 5</span>
       <h1 class="step-title" tr="Review your booking">Review your booking</h1>
       <p class="step-sub" tr="Confirm who's doing what, then review the full summary below before sending your request.">Confirm who's doing what, then review the full summary below before sending your request.</p>
+
+      <div class="field checkbox-row" style="margin-bottom:20px;">
+        <input type="checkbox" id="notifyAllEmailsCheck" ${state.notifyAllEmails?'checked':''}>
+        <label for="notifyAllEmailsCheck" tr="Send confirmation emails to every traveler's email, not just mine">Send confirmation emails to every traveler's email, not just mine</label>
+      </div>
 
       <div class="section-label" tr="Who's doing what">Who's doing what</div>
       <div style="margin-top:16px;">${assignBlocks}</div>
@@ -2446,6 +2475,7 @@ async function handleConfirmBooking(){
     total: grandTotal(),
     deposit: 0,
     suggestedDeposit: computeSuggestedDeposit(grandTotal()),
+    notifyAllEmails: !!state.notifyAllEmails,
   };
 
   const bookings = await storeGet(SK.bookings, true) || [];
@@ -2737,6 +2767,7 @@ function initGlobalListeners(){
       }
       refreshEquipmentSection(t.dataset.allOwnEquip); return;
     }
+    if(t.id === 'notifyAllEmailsCheck'){ state.notifyAllEmails = t.checked; return; }
     if(t.matches('[data-nitrox-check]')){
       const p = state.people.find(x=>x.id===t.dataset.person);
       if(p) p.nitrox = t.checked;
@@ -2770,6 +2801,7 @@ async function init(){
       people: (draft.people && draft.people.length) ? draft.people : state.people,
       clientAssignments: draft.clientAssignments ?? {},
       furthestStepReached: draft.furthestStepReached ?? 0,
+      notifyAllEmails: draft.notifyAllEmails ?? false,
     });
   }
 
