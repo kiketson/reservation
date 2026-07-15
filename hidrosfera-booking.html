@@ -1649,23 +1649,29 @@ function finSizeOptionsForGender(gender, currentVal){
 }
 
 const EQUIP_ITEMS = [
-  { key:'regulator', label:'Regulator',      hasSize:false, isRegulator:true, scubaOnly:true },
-  { key:'bcd',       label:'BCD',            hasSize:true,  scubaOnly:true  },
-  { key:'computer',  label:'Dive computer',  hasSize:false, scubaOnly:true  },
+  { key:'regulator', label:'Regulator',      hasSize:false, isRegulator:true },
+  { key:'bcd',       label:'BCD',            hasSize:true  },
+  { key:'computer',  label:'Dive computer',  hasSize:false },
   { key:'fins',      label:'Fins',           hasSize:true, isFins:true },
   { key:'mask',      label:'Mask',           hasSize:false },
   { key:'wetsuit',   label:'Wetsuit',        hasSize:true },
 ];
-function bookingIncludesScuba(){
-  // BCD / dive computer / regulator only make sense when at least one
-  // booked experience is scuba diving. Evaluated across the whole
-  // booking (per client), not per single activity — if someone books
-  // a dive AND a snorkel trip together, they still get the full list.
-  return state.bookingActivities.some(ba=>{ const a=activityById(ba.activityId); return a && a.divingType==='scuba'; });
+function activityRequiredEquipment(a){
+  if(!a) return [];
+  if(Array.isArray(a.requiredEquipment)) return a.requiredEquipment;
+  // Legacy default (before per-activity equipment lists existed): scuba
+  // activities offered everything, everything else offered mask/fins/wetsuit.
+  return a.divingType === 'scuba' ? ['bcd','computer','fins','mask','regulator','wetsuit'] : ['fins','mask','wetsuit'];
 }
 function visibleEquipItems(){
-  const scuba = bookingIncludesScuba();
-  return EQUIP_ITEMS.filter(def => scuba || !def.scubaOnly);
+  // Union of whatever's required across every booked activity — evaluated
+  // per client (booking-wide), not per single activity, since equipment is
+  // still collected once per traveler.
+  const needed = new Set();
+  state.bookingActivities.forEach(ba=>{
+    activityRequiredEquipment(activityById(ba.activityId)).forEach(k=>needed.add(k));
+  });
+  return EQUIP_ITEMS.filter(def => needed.has(def.key));
 }
 function setNestedPersonField(person, path, value){
   const parts = path.split('.');
@@ -1899,13 +1905,7 @@ function renderPersonFieldsGrid(person, idx){
         </div>
       </div>`;
     })()}
-  </div>
-  ${person._welcomeBack ? `
-    <div class="welcome-back">
-      <span>👋</span>
-      <span tr="Welcome back with us! You visited us on ${fmtDateHuman(person._welcomeBack.date)}">Welcome back with us! You visited us on ${fmtDateHuman(person._welcomeBack.date)}</span>
-      <button class="btn-text" data-apply-saved="${person.id}" tr="Fill in my saved details">Fill in my saved details</button>
-    </div>` : ''}`;
+  </div>`;
 }
 
 function isItemComplete(it, hasSize, isRegulator){
@@ -2053,14 +2053,29 @@ function renderPeopleStep(){
    ======================================================================= */
 function ensureAssignmentsDefault(){
   state.bookingActivities.forEach(ba=>{
+    const a = activityById(ba.activityId);
     if(!state.clientAssignments[ba.activityId]){
-      state.clientAssignments[ba.activityId] = state.people.map(p=>p.id);
+      // Default to everyone, EXCEPT anyone who'd conflict with an activity they're already in.
+      state.clientAssignments[ba.activityId] = state.people
+        .filter(p => !personHasConflictingAssignment(p.id, ba, a))
+        .map(p=>p.id);
     } else {
       // drop assignments for people who no longer exist
       const validIds = state.people.map(p=>p.id);
       state.clientAssignments[ba.activityId] = state.clientAssignments[ba.activityId].filter(id=>validIds.includes(id));
     }
   });
+}
+function personHasConflictingAssignment(personId, ba, a){
+  for(const otherBa of state.bookingActivities){
+    if(otherBa.activityId === ba.activityId) continue;
+    const otherAssigned = state.clientAssignments[otherBa.activityId] || [];
+    if(!otherAssigned.includes(personId)) continue;
+    if(!datesOverlap(ba, otherBa)) continue;
+    const otherActivity = activityById(otherBa.activityId);
+    if(activitiesTimeConflict(a, otherActivity)) return true;
+  }
+  return false;
 }
 
 function activityTimeRangeMinutes(a){
@@ -2093,19 +2108,10 @@ function toggleClientAssignment(activityId, personId){
   // Adding this person — check they're not already booked on an overlapping activity that day.
   const a = activityById(activityId);
   const ba = state.bookingActivities.find(x=>x.activityId===activityId);
-  if(a && ba){
-    for(const otherBa of state.bookingActivities){
-      if(otherBa.activityId === activityId) continue;
-      const otherAssigned = state.clientAssignments[otherBa.activityId] || [];
-      if(!otherAssigned.includes(personId)) continue;
-      if(!datesOverlap(ba, otherBa)) continue;
-      const otherActivity = activityById(otherBa.activityId);
-      if(activitiesTimeConflict(a, otherActivity)){
-        const p = state.people.find(x=>x.id===personId);
-        showToast(`${personDisplayName(p, state.people.indexOf(p))} is already booked on ${activityDisplayName(otherActivity)} at an overlapping time that day.`);
-        return;
-      }
-    }
+  if(a && ba && personHasConflictingAssignment(personId, ba, a)){
+    const p = state.people.find(x=>x.id===personId);
+    showToast(`${personDisplayName(p, state.people.indexOf(p))} is already booked on an overlapping activity that day.`);
+    return;
   }
   list.push(personId);
   state.clientAssignments[activityId] = list;
@@ -2125,34 +2131,53 @@ function totalDaysForPerson(personId){
     return sum + days;
   }, 0);
 }
+function itemDaysForPerson(p, itemKey){
+  return state.bookingActivities.reduce((sum,ba)=>{
+    const assigned = state.clientAssignments[ba.activityId]||[];
+    if(!assigned.includes(p.id)) return sum;
+    const a = activityById(ba.activityId);
+    if(!activityRequiredEquipment(a).includes(itemKey)) return sum;
+    const days = ba.date ? daysBetweenInclusive(ba.date, ba.endDate||ba.date) : 1;
+    return sum + days;
+  }, 0);
+}
+function fullSetDaysForPerson(p, rentedKeys){
+  // Union of days across activities that require at least one of the rented items.
+  return state.bookingActivities.reduce((sum,ba)=>{
+    const assigned = state.clientAssignments[ba.activityId]||[];
+    if(!assigned.includes(p.id)) return sum;
+    const a = activityById(ba.activityId);
+    const req = activityRequiredEquipment(a);
+    if(!rentedKeys.some(k=>req.includes(k))) return sum;
+    const days = ba.date ? daysBetweenInclusive(ba.date, ba.endDate||ba.date) : 1;
+    return sum + days;
+  }, 0);
+}
 function equipmentCostForPerson(p){
-  const days = totalDaysForPerson(p.id);
-  if(days<=0) return 0;
-  const rentedCount = visibleEquipItems().filter(def => p.items[def.key] && p.items[def.key].mode==='rent').length;
-  if(rentedCount >= 4 && state.settings.equipmentPricing.fullSetPrice){
-    return state.settings.equipmentPricing.fullSetPrice * days;
+  const rentedDefs = visibleEquipItems().filter(def => p.items[def.key] && p.items[def.key].mode==='rent');
+  if(!rentedDefs.length) return 0;
+  if(rentedDefs.length >= 4 && state.settings.equipmentPricing.fullSetPrice){
+    return state.settings.equipmentPricing.fullSetPrice * fullSetDaysForPerson(p, rentedDefs.map(d=>d.key));
   }
-  let cost = 0;
-  visibleEquipItems().forEach(def=>{
-    const it = p.items[def.key];
-    if(it && it.mode==='rent') cost += (state.settings.equipmentPricing[def.key]||0) * days;
-  });
-  return cost;
+  return rentedDefs.reduce((cost,def)=> cost + (state.settings.equipmentPricing[def.key]||0) * itemDaysForPerson(p, def.key), 0);
 }
 function equipmentRentalBreakdown(){
   const byItem = {};
   let fullSetCount = 0, fullSetCost = 0, fullSetDays = 0;
   state.people.forEach(p=>{
-    const days = totalDaysForPerson(p.id);
-    if(days<=0) return;
     const rentedDefs = visibleEquipItems().filter(def => p.items[def.key] && p.items[def.key].mode==='rent');
+    if(!rentedDefs.length) return;
     if(rentedDefs.length >= 4 && state.settings.equipmentPricing.fullSetPrice){
+      const days = fullSetDaysForPerson(p, rentedDefs.map(d=>d.key));
+      if(days<=0) return;
       fullSetCount += 1;
       fullSetCost += state.settings.equipmentPricing.fullSetPrice * days;
       fullSetDays += days;
       return;
     }
     rentedDefs.forEach(def=>{
+      const days = itemDaysForPerson(p, def.key);
+      if(days<=0) return;
       if(!byItem[def.key]) byItem[def.key] = { count:0, cost:0, days:0, label:def.label };
       byItem[def.key].count += 1;
       byItem[def.key].cost += (state.settings.equipmentPricing[def.key]||0) * days;

@@ -775,6 +775,13 @@ function bookingCollected(b){
 function bookingRemaining(b){ return Math.max(0, (bookingTotalAfterDiscount(b)||0) - bookingCollected(b)); }
 
 const EQUIP_LABELS_ADMIN = { bcd:'BCD', computer:'Dive computer', fins:'Fins', mask:'Mask', regulator:'Regulator', wetsuit:'Wetsuit' };
+function activityRequiredEquipment(a){
+  if(!a) return [];
+  if(Array.isArray(a.requiredEquipment)) return a.requiredEquipment;
+  // Legacy default (before per-activity equipment lists existed): scuba
+  // activities offered everything, everything else offered mask/fins/wetsuit.
+  return a.divingType === 'scuba' ? ['bcd','computer','fins','mask','regulator','wetsuit'] : ['fins','mask','wetsuit'];
+}
 function personDaysInBooking(b, p){
   let days = 0;
   (b.activities||[]).forEach(act=>{
@@ -782,13 +789,29 @@ function personDaysInBooking(b, p){
   });
   return days;
 }
+function itemDaysForPersonAdmin(b, p, itemKey){
+  return (b.activities||[]).reduce((sum,act)=>{
+    if(!(act.assignedPersonIds||[]).includes(p.id)) return sum;
+    const a = activityById(act.activityId);
+    if(!activityRequiredEquipment(a).includes(itemKey)) return sum;
+    return sum + (act.date ? adminDaysBetween(act.date, act.endDate) : 1);
+  }, 0);
+}
+function fullSetDaysForPersonAdmin(b, p, rentedKeys){
+  return (b.activities||[]).reduce((sum,act)=>{
+    if(!(act.assignedPersonIds||[]).includes(p.id)) return sum;
+    const a = activityById(act.activityId);
+    const req = activityRequiredEquipment(a);
+    if(!rentedKeys.some(k=>req.includes(k))) return sum;
+    return sum + (act.date ? adminDaysBetween(act.date, act.endDate) : 1);
+  }, 0);
+}
 function personEquipmentCost(b, p){
   const ep = state.settings.equipmentPricing || {};
-  const days = personDaysInBooking(b, p);
-  if(days<=0) return 0;
   const rentedKeys = Object.keys(EQUIP_LABELS_ADMIN).filter(k=> p.items && p.items[k] && p.items[k].mode==='rent');
-  if(rentedKeys.length >= 4 && ep.fullSetPrice) return ep.fullSetPrice * days;
-  return rentedKeys.reduce((s,k)=> s + (ep[k]||0) * days, 0);
+  if(!rentedKeys.length) return 0;
+  if(rentedKeys.length >= 4 && ep.fullSetPrice) return ep.fullSetPrice * fullSetDaysForPersonAdmin(b, p, rentedKeys);
+  return rentedKeys.reduce((s,k)=> s + (ep[k]||0) * itemDaysForPersonAdmin(b, p, k), 0);
 }
 const LANGUAGE_NATIVE_NAMES_ADMIN = { en:'English', es:'Español', fr:'Français', jp:'日本語', pt:'Português' };
 function languageNativeNameAdmin(code){ return LANGUAGE_NATIVE_NAMES_ADMIN[code] || LANGUAGE_NATIVE_NAMES_ADMIN.en; }
@@ -797,14 +820,17 @@ function equipmentRentalBreakdownAdmin(b){
   const byItem = {};
   let fullSetCount = 0, fullSetCost = 0, fullSetDays = 0;
   (b.people||[]).forEach(p=>{
-    const days = personDaysInBooking(b, p);
-    if(days<=0) return;
     const rentedKeys = Object.keys(EQUIP_LABELS_ADMIN).filter(k=> p.items && p.items[k] && p.items[k].mode==='rent');
+    if(!rentedKeys.length) return;
     if(rentedKeys.length >= 4 && ep.fullSetPrice){
+      const days = fullSetDaysForPersonAdmin(b, p, rentedKeys);
+      if(days<=0) return;
       fullSetCount += 1; fullSetCost += ep.fullSetPrice * days; fullSetDays += days;
       return;
     }
     rentedKeys.forEach(k=>{
+      const days = itemDaysForPersonAdmin(b, p, k);
+      if(days<=0) return;
       if(!byItem[k]) byItem[k] = { count:0, cost:0, days:0, label:EQUIP_LABELS_ADMIN[k] };
       byItem[k].count += 1;
       byItem[k].cost += (ep[k]||0) * days;
@@ -1796,7 +1822,7 @@ function renderActivitiesTab(){
     <button class="btn btn-primary" id="addActivityBtn">+ Add activity</button>
   </div>
   <div class="card">${rows || '<p style="color:var(--ink-soft);">No activities yet.</p>'}</div>
-  ${availSection}`;
+  <div id="availEditorSection">${availSection}</div>`;
 }
 
 function renderAvailabilityEditor(activityId){
@@ -1838,6 +1864,50 @@ function renderAvailabilityEditor(activityId){
       <button data-avail-nav="next" ${canGoNext?'':'disabled'} aria-label="Next month">›</button>
     </div>
     <div class="admin-cal-grid" style="grid-template-columns:repeat(7,1fr); margin-top:12px;">${cells}</div>
+  </div>
+  ${renderAvailabilityYearOverview(activityId, state.availMonth.y)}`;
+}
+
+function renderAvailabilityYearOverview(activityId, year){
+  const blocked = state.availability[activityId] || [];
+  const months = Array.from({length:12}, (_,m)=>{
+    const first = new Date(year, m, 1);
+    const startDow = first.getDay();
+    const daysInMonth = new Date(year, m+1, 0).getDate();
+    const monthName = first.toLocaleDateString('en-US', {month:'short'});
+    let cells = '';
+    const dows = ['S','M','T','W','T','F','S'];
+    cells += dows.map(d=>`<div class="mini-dow">${d}</div>`).join('');
+    for(let i=0;i<startDow;i++) cells += `<div class="mini-day out-range"></div>`;
+    for(let d=1; d<=daysInMonth; d++){
+      const dateObj = new Date(year,m,d);
+      const iso = fmtDate(dateObj);
+      const isPast = dateObj < TODAY;
+      const isBlocked = blocked.includes(iso);
+      const status = isPast ? '' : (isBlocked ? 'cancelled' : 'confirmed');
+      cells += `<div class="mini-day ${status?'has-event status-'+status:''}">${d}</div>`;
+    }
+    const isActive = year === state.availMonth.y && m === state.availMonth.m;
+    return `<div class="mini-month ${isActive?'is-active-month':''}" data-avail-year-month-nav="${m}" data-avail-year-nav-year="${year}" title="Jump to ${monthName} ${year}">
+      <div class="mini-month-title">${monthName}</div>
+      <div class="mini-grid">${cells}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="year-overview">
+    <div class="page-head" style="margin-bottom:14px;">
+      <div>
+        <h3>${year} at a glance</h3>
+        <div class="stat-sub">Green = available · Red = blocked. Click a month to jump the calendar above.</div>
+      </div>
+      <div class="admin-cal-head" style="gap:4px;">
+        <button data-avail-year-nav="prev" aria-label="Previous year">‹</button>
+        <div class="admin-cal-title" style="font-size:16px;">${year}</div>
+        <button data-avail-year-nav="next" aria-label="Next year">›</button>
+      </div>
+    </div>
+    <div class="year-grid">${months}</div>
   </div>`;
 }
 
@@ -1924,6 +1994,19 @@ function buildActivityFormHtml(a, isNew){
     <div class="field"><label>Nitrox price per tank (MX$)</label><input type="number" min="0" id="af_nitrox_price" value="${a.nitroxPricePerTank||200}"></div>
     <div class="field"><label>Tanks per day</label><input type="number" min="1" id="af_tanks_per_day" value="${a.tanksPerDay||1}"></div>
   </div>
+  <div class="section-title" style="margin-top:18px;">Equipment required for this activity</div>
+  <p style="color:var(--ink-soft); font-size:12.5px; margin-bottom:10px;">Only checked items are offered to customers booking this activity, and equipment rental is only charged for the days this specific activity runs.</p>
+  <div style="display:flex; gap:16px; flex-wrap:wrap;">
+    ${(()=>{
+      const labels = { bcd:'BCD', computer:'Dive computer', fins:'Fins', mask:'Mask', regulator:'Regulator', wetsuit:'Wetsuit' };
+      const required = activityRequiredEquipment(a);
+      return Object.keys(labels).map(key=>`
+        <label style="display:flex; align-items:center; gap:6px; font-size:13.5px;">
+          <input type="checkbox" id="af_equip_${key}" ${required.includes(key)?'checked':''}> ${labels[key]}
+        </label>
+      `).join('');
+    })()}
+  </div>
   <div class="section-title" style="margin-top:18px;">Content by language</div>
   <p style="color:var(--ink-soft); font-size:12.5px; margin-bottom:10px;">Fill in English at minimum — the other languages fall back to it automatically for anything left blank.</p>
   ${tabBar}
@@ -1965,6 +2048,7 @@ async function saveActivityFromForm(activityId, isNew){
     hours: byLang('af_hours'),
     meetupTime: get('af_meetuptime'),
     durationHours: Number(get('af_duration_hours'))||4,
+    requiredEquipment: Object.keys(EQUIP_LABELS_ADMIN).filter(key => (document.getElementById(`af_equip_${key}`)||{}).checked),
     discount: discountType ? { type: discountType, value: discountVal } : null,
     multiDayDiscount: (mddMinDays >= 2 && mddVal > 0) ? { minDays: mddMinDays, type: get('af_mdd_type'), value: mddVal } : null,
     nitroxAvailable: get('af_nitrox_available') === '1',
@@ -2910,7 +2994,14 @@ document.addEventListener('click', (e)=>{
   const toggleAct = t.closest('[data-toggle-active]'); if(toggleAct){ toggleActivityActive(toggleAct.dataset.toggleActive); return; }
   const previewAct = t.closest('[data-preview-activity]'); if(previewAct){ previewActivity(previewAct.dataset.previewActivity); return; }
   const moveAct = t.closest('[data-move-activity]'); if(moveAct){ moveActivity(Number(moveAct.dataset.moveActivity), moveAct.dataset.moveDir); return; }
-  const manageAvail = t.closest('[data-manage-avail]'); if(manageAvail){ state.availEditingId = manageAvail.dataset.manageAvail; state.availMonth = { y: TODAY.getFullYear(), m: TODAY.getMonth() }; renderTab(); return; }
+  const manageAvail = t.closest('[data-manage-avail]');
+  if(manageAvail){
+    state.availEditingId = manageAvail.dataset.manageAvail;
+    state.availMonth = { y: TODAY.getFullYear(), m: TODAY.getMonth() };
+    renderTab();
+    setTimeout(()=>{ document.getElementById('availEditorSection')?.scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
+    return;
+  }
   if(t.id === 'closeAvailEditor'){ state.availEditingId = null; renderTab(); return; }
   const availNav = t.closest('[data-avail-nav]');
   if(availNav){
@@ -2936,6 +3027,18 @@ document.addEventListener('click', (e)=>{
   const yearOverviewNav = t.closest('[data-year-overview-nav]');
   if(yearOverviewNav){
     state.calMonth = { y: state.calMonth.y + (yearOverviewNav.dataset.yearOverviewNav==='prev' ? -1 : 1), m: state.calMonth.m };
+    renderTab();
+    return;
+  }
+  const availYearNav = t.closest('[data-avail-year-nav]');
+  if(availYearNav){
+    state.availMonth = { y: state.availMonth.y + (availYearNav.dataset.availYearNav==='prev' ? -1 : 1), m: state.availMonth.m };
+    renderTab();
+    return;
+  }
+  const availYearMonthNav = t.closest('[data-avail-year-month-nav]');
+  if(availYearMonthNav){
+    state.availMonth = { y: Number(availYearMonthNav.dataset.availYearNavYear), m: Number(availYearMonthNav.dataset.availYearMonthNav) };
     renderTab();
     return;
   }
