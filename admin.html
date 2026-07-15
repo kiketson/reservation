@@ -899,7 +899,7 @@ function equipmentSummaryLineClientFacing(p){
   Object.keys(labels).forEach(key=>{
     const it = p.items[key];
     if(!it || !it.mode) return;
-    if(it.mode === 'own') ownItems.push(labels[key]);
+    if(it.mode === 'own') ownItems.push(key==='regulator' && it.regType==='DIN' ? `${labels[key]} [DIN]` : labels[key]);
     else if(it.mode === 'rent'){
       let sizeText = '';
       if(key==='fins' && it.size) sizeText = formatFinSizeAdmin(it.size);
@@ -1534,7 +1534,7 @@ function buildClientFacingResumeHtml(b, statusLabel, statusTone){
     if(days > 1) parts.push(`${days} days`);
     parts.push(`${count} traveler${count!==1?'s':''}`);
     return `
-    <div class="lg-activity-card">
+    <div class="lg-activity-card" style="${a && a.watermarkImage ? `position:relative; overflow:hidden; background-image:linear-gradient(rgba(255,255,255,.88),rgba(255,255,255,.88)), url('${escapeAttr(a.watermarkImage)}'); background-size:cover; background-position:center;` : ''}">
       <h4>${a?a.icon:'❓'} ${escapeHtml(a?activityDisplayName(a):'Unknown experience')}</h4>
       <div class="lg-row"><span class="k">Date</span><span class="v">${fmtBaRange(act)}</span></div>
       ${a && a.meetupTime ? `<div class="lg-row"><span class="k">Meetup time</span><span class="v">${fmtTime12(a.meetupTime)}</span></div>` : ''}
@@ -1547,10 +1547,10 @@ function buildClientFacingResumeHtml(b, statusLabel, statusTone){
     const unassigned = personActivitiesForAdmin(b, p).length === 0;
     return `
     <div class="lg-activity-card ${unassigned?'lg-activity-card-warn':''}">
-      <h4>${escapeHtml(p.fullName || 'Traveler '+(i+1))}</h4>
+      <h4 style="display:flex; justify-content:space-between; align-items:center;"><span>${escapeHtml(p.fullName || 'Traveler '+(i+1))}</span>${p.nitrox ? `<span style="color:var(--ok); font-size:12px; font-family:var(--font-mono); font-weight:700; text-transform:uppercase;">Nitrox</span>` : ''}</h4>
       <div class="lg-row"><span class="k">Gender</span><span class="v">${escapeHtml(p.gender||'—')}</span></div>
       <div class="lg-row"><span class="k">Nationality</span><span class="v">${escapeHtml(p.nationality||'—')}</span></div>
-      <div class="lg-row"><span class="k">Date of birth</span><span class="v">${p.dob?fmtDateHuman(p.dob):'—'}</span></div>
+      <div class="lg-row"><span class="k">Date of birth</span><span class="v">${p.dob?`${fmtDateHuman(p.dob)} [${ageFromDob(p.dob)}]`:'—'}</span></div>
       <div class="lg-row"><span class="k">Allergies / dietary</span><span class="v">${escapeHtml(p.allergies||'—')}</span></div>
       <div class="lg-row"><span class="k">Rental equipment</span><span class="v">${equipmentSummaryLineClientFacing(p)}</span></div>
       ${p.notes ? `<div class="lg-row"><span class="k">Notes</span><span class="v">${escapeHtml(p.notes)}</span></div>` : ''}
@@ -1895,6 +1895,7 @@ function buildActivityFormHtml(a, isNew){
     </div>
     <div class="field"><label>Icon (emoji)</label><input type="text" id="af_icon" value="${escapeAttr(a.icon)}" maxlength="4"></div>
     <div class="field"><label>Image URL (optional — leave blank to use a color gradient)</label><input type="text" id="af_image" value="${escapeAttr(a.image||'')}" placeholder="https://…"></div>
+    <div class="field"><label>Watermark image URL (optional — faint background on the Review page's activity card)</label><input type="text" id="af_watermark" value="${escapeAttr(a.watermarkImage||'')}" placeholder="https://…"></div>
     <div class="field"><label>Price per person (MX$)</label><input type="number" min="0" id="af_price" value="${a.price}"></div>
     <div class="field"><label>Meetup time</label><input type="time" id="af_meetuptime" value="${escapeAttr(a.meetupTime||'')}"></div>
     <div class="field"><label>Duration (hours, for scheduling conflicts)</label><input type="number" min="0.5" step="0.5" id="af_duration_hours" value="${a.durationHours||4}"></div>
@@ -1958,6 +1959,7 @@ async function saveActivityFromForm(activityId, isNew){
     divingType: get('af_divingtype') || null,
     icon: get('af_icon').trim() || '🌊',
     image: get('af_image').trim() || null,
+    watermarkImage: get('af_watermark').trim() || null,
     price: Number(get('af_price'))||0,
     durationLabel: byLang('af_duration'),
     hours: byLang('af_hours'),

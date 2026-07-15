@@ -372,6 +372,9 @@ button.selection-chip:hover{ background:rgba(255,255,255,.18); }
 .field-grid.field-error{ outline:2px solid var(--err); outline-offset:6px; border-radius:8px; animation: shake .4s; }
 .eq-mode-toggle{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 .eq-mode-toggle label{ display:flex; align-items:center; gap:6px; font-size:13.5px; font-weight:500; background:#fff; border:1.5px solid var(--line); padding:8px 14px; border-radius:999px; }
+.chip-checkbox{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:500; background:#fff; border:1.5px solid var(--line); padding:8px 14px; border-radius:999px; cursor:pointer; transition:all .15s ease; }
+.chip-checkbox input{ display:none; }
+.chip-checkbox:has(input:checked){ background:var(--teal); border-color:var(--teal); color:#fff; }
 
 .btn-toggle-pair{ display:flex; gap:6px; }
 .btn-toggle{
@@ -1678,7 +1681,7 @@ function renderEquipItemCard(person, def){
   const { key, label, hasSize, isFins, isRegulator } = def;
   const it = person.items[key];
   const mode = it.mode;
-  const complete = isItemComplete(it, hasSize);
+  const complete = isItemComplete(it, hasSize, isRegulator);
 
   let sizeBlock = '';
   if(hasSize && mode==='rent'){
@@ -1727,10 +1730,10 @@ function renderEquipmentSection(person, idx){
 
   return `
   <div class="section-label" tr="Rental equipment">Rental equipment</div>
-  <div class="field span-2 checkbox-row" style="margin-bottom:14px;">
-    <input type="checkbox" id="allOwn_${person.id}" data-all-own-equip="${person.id}" ${allOwn?'checked':''}>
-    <label for="allOwn_${person.id}" tr="I'm bringing all my own equipment">I'm bringing all my own equipment</label>
-  </div>
+  <label class="chip-checkbox" style="margin-bottom:14px;">
+    <input type="checkbox" data-all-own-equip="${person.id}" ${allOwn?'checked':''}>
+    <span tr="I'm bringing all my own equipment">I'm bringing all my own equipment</span>
+  </label>
   <div class="equip-note" tr="${escapeAttr("Every item below needs an answer — either rent it from us or bring your own. If you rent a BCD or wetsuit and aren't sure of your size, choose \"I don't know my size\" from its dropdown and give us your height and weight below.")}">
     Every item below needs an answer — either rent it from us or bring your own. If you rent a BCD or wetsuit and aren't sure of your size, choose "I don't know my size" from its dropdown and give us your height and weight below.
   </div>
@@ -1777,14 +1780,6 @@ function renderEquipmentSection(person, idx){
       <span style="font-size:11px; color:var(--ink-soft);" tr="Not sure? Leave this blank and our team will help you get it right on the day.">Not sure? Leave this blank and our team will help you get it right on the day.</span>
     </div>
   </div>
-
-  ${nitroxActs.length ? `
-  <div class="field span-2" style="margin-top:14px;">
-    <label style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px;">
-      <input type="checkbox" data-nitrox-check="1" data-person="${person.id}" ${person.nitrox?'checked':''}>
-      <span tr="Nitrox (+MX$${nitroxRate} per tank)">Nitrox (+MX$${nitroxRate} per tank)</span>
-    </label>
-  </div>` : ''}
   <div style="text-align:center; margin-top:18px;"><button type="button" class="btn btn-outline btn-sm" data-collapse-person="${person.id}" tr="Done">Done</button></div>`;
 }
 
@@ -1832,8 +1827,14 @@ function renderDobSelects(target, targetAttr, idPrefix){
 function renderPersonFieldsGrid(person, idx){
   const gender = person.gender;
   const langDefault = person.language || state.pageLanguage;
-  const nameReq = idx === 0, dobReq = idx === 0, genderReq = idx > 0, allergiesReq = idx > 0;
+  const nameReq = true, dobReq = true, genderReq = true, allergiesReq = true;
   return `
+  ${person._welcomeBack ? `
+    <div class="welcome-back" style="margin-bottom:16px;">
+      <span>👋</span>
+      <span tr="Welcome back with us! You visited us on ${fmtDateHuman(person._welcomeBack.date)}">Welcome back with us! You visited us on ${fmtDateHuman(person._welcomeBack.date)}</span>
+      <button type="button" class="btn-text" data-apply-saved="${person.id}" tr="Fill in my saved details">Fill in my saved details</button>
+    </div>` : ''}
   <div class="field-grid">
     <div class="field" data-field-key="email">
       <label tr="Email">Email</label>
@@ -1882,6 +1883,22 @@ function renderPersonFieldsGrid(person, idx){
       <label tr="Notes">Notes</label>
       <textarea data-person-field="notes" data-person="${person.id}" placeholder="Anything else we should know?">${person.notes}</textarea>
     </div>
+    ${(()=>{
+      const nitroxActs = nitroxEligibleActivities();
+      if(!nitroxActs.length) return '';
+      const nitroxRate = activityById(nitroxActs[0].activityId).nitroxPricePerTank || 200;
+      return `
+      <div class="field span-2">
+        <label tr="Breathing gas">Breathing gas</label>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div class="btn-toggle-pair" style="max-width:220px;">
+            <button type="button" class="btn-toggle ${!person.nitrox?'active':''}" data-btn-toggle="nitrox" data-btn-value="0" data-person="${person.id}" tr="Air">Air</button>
+            <button type="button" class="btn-toggle ${person.nitrox?'active':''}" data-btn-toggle="nitrox" data-btn-value="1" data-person="${person.id}" tr="Nitrox">Nitrox</button>
+          </div>
+          <span style="font-size:12.5px; color:var(--ink-soft);" tr="+MX$${nitroxRate} per tank">+MX$${nitroxRate} per tank</span>
+        </div>
+      </div>`;
+    })()}
   </div>
   ${person._welcomeBack ? `
     <div class="welcome-back">
@@ -1891,9 +1908,10 @@ function renderPersonFieldsGrid(person, idx){
     </div>` : ''}`;
 }
 
-function isItemComplete(it, hasSize){
+function isItemComplete(it, hasSize, isRegulator){
   if(!it.mode) return false;
   if(hasSize && it.mode==='rent' && !it.size) return false;
+  if(isRegulator && it.mode==='own' && !it.regType) return false;
   return true;
 }
 function needsSharedHWFor(p){
@@ -1901,7 +1919,7 @@ function needsSharedHWFor(p){
 }
 function equipmentFullyComplete(p){
   for(const def of visibleEquipItems()){
-    if(!isItemComplete(p.items[def.key], def.hasSize)) return false;
+    if(!isItemComplete(p.items[def.key], def.hasSize, def.isRegulator)) return false;
   }
   if(needsSharedHWFor(p) && (!p.heightWeight.height || !p.heightWeight.weight)) return false;
   return true;
@@ -1944,7 +1962,9 @@ function renderPersonCard(person, idx){
       </div>
     </div>
     <div class="person-body">
-      ${renderPersonFieldsGrid(person, idx)}
+      <div data-fields-section="${person.id}">
+        ${renderPersonFieldsGrid(person, idx)}
+      </div>
       <div data-equip-section="${person.id}">
         ${renderEquipmentSection(person, idx)}
       </div>
@@ -2197,7 +2217,7 @@ function equipmentSummaryLine(p){
   visibleEquipItems().forEach(def=>{
     const it = p.items[def.key];
     if(!it || !it.mode) return;
-    if(it.mode === 'own') ownItems.push(labels[def.key]);
+    if(it.mode === 'own') ownItems.push(def.key==='regulator' && it.regType==='DIN' ? `${labels[def.key]} [DIN]` : labels[def.key]);
     else if(it.mode === 'rent'){
       const sizeText = equipmentItemSummary(def.key, it);
       rentalItems.push(sizeText ? `${labels[def.key]} (${sizeText})` : labels[def.key]);
@@ -2222,7 +2242,7 @@ function buildResumeHtml(statusLabel, statusTone, interactive){
     const assignedIds = state.clientAssignments[ba.activityId]||[];
     const names = assignedIds.map(id=> (state.people.find(p=>p.id===id)||{}).fullName || '—');
     return `
-    <div class="lg-activity-card">
+    <div class="lg-activity-card" style="${a.watermarkImage ? `position:relative; overflow:hidden; background-image:linear-gradient(rgba(255,255,255,.88),rgba(255,255,255,.88)), url('${escapeAttr(a.watermarkImage)}'); background-size:cover; background-position:center;` : ''}">
       <h4 tr="${escapeAttr(activityDisplayName(a))}">${a.icon} ${activityDisplayName(a)}</h4>
       <div class="lg-row"><span class="k" tr="Date">Date</span><span class="v">${fmtBaDateRange(ba)}</span></div>
       ${a.meetupTime ? `<div class="lg-row"><span class="k" tr="Meetup time">Meetup time</span><span class="v">${fmtTime12(a.meetupTime)}</span></div>` : ''}
@@ -2243,10 +2263,10 @@ function buildResumeHtml(statusLabel, statusTone, interactive){
     const unassigned = personActivityIds(p).length === 0;
     return `
     <div class="lg-activity-card ${unassigned ? 'lg-activity-card-warn' : ''}">
-      <h4>${p.fullName || 'Traveler '+(i+1)}</h4>
+      <h4 style="display:flex; justify-content:space-between; align-items:center;"><span>${p.fullName || 'Traveler '+(i+1)}</span>${p.nitrox ? `<span style="color:var(--ok); font-size:12px; font-family:var(--font-mono); font-weight:700; text-transform:uppercase;" tr="Nitrox">Nitrox</span>` : ''}</h4>
       <div class="lg-row"><span class="k" tr="Gender">Gender</span><span class="v">${p.gender||'—'}</span></div>
       <div class="lg-row"><span class="k" tr="Nationality">Nationality</span><span class="v">${p.nationality||'—'}</span></div>
-      <div class="lg-row"><span class="k" tr="Date of birth">Date of birth</span><span class="v">${p.dob||'—'}</span></div>
+      <div class="lg-row"><span class="k" tr="Date of birth">Date of birth</span><span class="v">${p.dob ? `${p.dob} [${ageFromDob(p.dob)}]` : '—'}</span></div>
       <div class="lg-row"><span class="k" tr="Allergies / dietary">Allergies / dietary</span><span class="v">${p.allergies||'—'}</span></div>
       <div class="lg-row"><span class="k" tr="Rental equipment">Rental equipment</span><span class="v">${equipmentSummaryLine(p)}</span></div>
       ${p.notes ? `<div class="lg-row"><span class="k" tr="Notes">Notes</span><span class="v">${p.notes}</span></div>` : ''}
@@ -2431,7 +2451,7 @@ function validatePeopleStep(){
     visibleEquipItems().forEach(def=>{
       const wrap = card.querySelector(`[data-field-key="eq_${def.key}"]`);
       if(wrap) clearFieldError(wrap);
-      if(!isItemComplete(p.items[def.key], def.hasSize)){
+      if(!isItemComplete(p.items[def.key], def.hasSize, def.isRegulator)){
         ok = false;
         if(wrap){ markFieldError(wrap); if(!firstBad) firstBad=wrap; }
       }
@@ -2561,6 +2581,18 @@ function refreshEquipmentSection(personId){
   refreshPersonCardStyle(personId);
   saveDraft();
 }
+function refreshFieldsSection(personId){
+  const p = state.people.find(x=>x.id===personId);
+  const idx = state.people.indexOf(p);
+  const container = document.querySelector(`[data-fields-section="${personId}"]`);
+  if(!p || idx === -1 || !container){ render(); return; }
+  const focusSelector = captureFocusSelector();
+  container.innerHTML = renderPersonFieldsGrid(p, idx);
+  restoreFocusSelector(focusSelector);
+  applyTranslations();
+  refreshPersonCardStyle(personId);
+  saveDraft();
+}
 function refreshMainContactCardStyle(){
   const card = document.querySelector('[data-main-contact-card]');
   if(!card) return;
@@ -2582,8 +2614,13 @@ function initGlobalListeners(){
     if(btnToggleEl){
       const p = state.people.find(x=>x.id===btnToggleEl.dataset.person);
       if(p){
-        setNestedPersonField(p, btnToggleEl.dataset.btnToggle, btnToggleEl.dataset.btnValue);
-        refreshEquipmentSection(p.id);
+        if(btnToggleEl.dataset.btnToggle === 'nitrox'){
+          p.nitrox = btnToggleEl.dataset.btnValue === '1';
+          refreshFieldsSection(p.id);
+        } else {
+          setNestedPersonField(p, btnToggleEl.dataset.btnToggle, btnToggleEl.dataset.btnValue);
+          refreshEquipmentSection(p.id);
+        }
       }
       return;
     }
@@ -2788,11 +2825,6 @@ function initGlobalListeners(){
       refreshEquipmentSection(t.dataset.allOwnEquip); return;
     }
     if(t.id === 'notifyAllEmailsCheck'){ state.notifyAllEmails = t.checked; return; }
-    if(t.matches('[data-nitrox-check]')){
-      const p = state.people.find(x=>x.id===t.dataset.person);
-      if(p) p.nitrox = t.checked;
-      return;
-    }
     if(t.matches('[data-assign-activity]')){
       toggleClientAssignment(t.dataset.assignActivity, t.dataset.assignPerson); return;
     }
